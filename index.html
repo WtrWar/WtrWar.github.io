@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="Styling.css">
+<title>game</title>
+</head>
+<body id="Page">
+	<div id="Menu">
+	  <h1 class="maintitle">game</h1><br>
+	  <input id="Name" type="text" value="EnterName" autocomplete="off"/><br><br><br><br>
+	  <button id="EnterGame" class="hide">Multiplayer</button><br><br>
+	  <button id="EnterPractice">Practice</button><br><br>
+	  <button id="Controls">Controls</button><br><br>
+	  <button id="HTP">How to play</button>
+	</div>
+		
+	<div id="Load" class="hide">
+	  <h2 id="LoadPlayer">Loading, 1/4 Players</h2>
+	  <h3 id="YourId">___</h3>
+	  <h3>Make sure Caps Lock is turned off</h3>
+	</div>
+	
+	<div id="Game" class="hide" height="555px" width="1000px">
+	  <canvas id="World" width="1000px" height="555px"></canvas>
+	  <canvas id="Zone"></canvas>
+	</div>
+	
+	<div id="Info" class="hide">
+	  <div id="GameInfo">
+		  <h3 id="ZoneDisplay">Closing zone: 1</h3>
+		  <h3 id="TimeLeft">Closing time left: 50s</h3>
+		  <h3 id="Players">4 players</h3>
+	  </div>
+		
+	  <div id="GameHP">
+		<progress id="Shieldbar" value="0" max="50"></progress>
+		<progress id="HPbar" value="100" max="100"></progress>
+	  </div>
+		
+	  <div id="GameItems">
+		<img id="Held1" src="GearSquare.png" alt="Tile1" class="Held" onclick="EmptyInventory()">
+		<img id="Held2" src="GearSquare.png" alt="Tile2" class="Held" onclick="EmptyInventory()">
+		<img id="Held3" src="GearSquare.png" alt="Tile3" class="Held" onclick="EmptyInventory()">
+		<img id="Held4" src="GearSquare.png" alt="Tile4" class="Held" onclick="EmptyInventory()">
+		<h3 id="HealInfo"></h3>
+	  </div> 
+	  <canvas id="Map" width="200px" height="200px"></canvas>
+		
+	</div>
+	
+	
+	<script type="module">
+	    import { initializeApp } from 'firebase/app';
+
+		const firebaseConfig = {
+		  apiKey: "AIzaSyAG48CZGZb0KwGGA0s8lZKRG3xTDpOrL4Q",
+		  authDomain: "external-project-server.firebaseapp.com",
+		  databaseURL: "https://external-project-server-default-rtdb.firebaseio.com",
+		  projectId: "external-project-server",
+		  storageBucket: "external-project-server.appspot.com",
+		  messagingSenderId: "536769510308",
+		  appId: "1:536769510308:web:dda587033dfd9d054b1f31"
+		};
+
+		const app = initializeApp(firebaseConfig);
+	</script>
+	
+
+<script src="Javascript.js"></script>	
+</body>
+</html>
+

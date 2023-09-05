@@ -1,0 +1,94 @@
+@charset "utf-8";
+/* CSS Document */
+
+#Page {
+	overflow: hidden;
+}
+#EnterGame {
+	height: 40px;
+	width: 80px;
+	background-color: red;
+}
+#EnterPractice {
+    height: 35px;
+	width: 65px;
+}
+#Menu {
+	position: fixed;
+	text-align: center;
+	left: 540px;
+	height: 400px;
+	width: 200px;
+	background-color: aqua;
+}
+#Load {
+	position: fixed;
+	text-align: center;
+	left: 540px;
+	height: 200px;
+	width: 200px;
+	background-color: orange;
+}
+#GameHP {
+  background: rgba(185,193,54,0.6);
+  position: fixed;
+  left: 20px;
+  top: 480px;
+  width: auto;
+  height: auto;
+  padding: 5px;
+}
+#GameInfo {
+	background: rgba(224,155,79,0.6);
+	position: fixed;
+	top: 5px;
+	left: 1075px;
+	width: 150px;
+	height: auto;
+	text-align: center;
+}
+#GameItems {
+	position: fixed;
+	left: 1020px;
+	top: 450px;
+	height: 65px;
+	width: 253px;
+	text-align: center;
+}
+#Map {
+	position: fixed;
+	left: 1050px;
+	top: 200px;
+	border: 4px black solid;
+}
+#Shieldbar {
+    height: 30px;
+	width: 150px;
+	margin-left: 18px;
+	display: block;
+	accent-color: gray;
+}
+#HPbar {
+	height: 40px;
+	width: 300px;
+	accent-color: green;
+}
+.Held {
+	border: 2px solid black;
+	height: 50px;
+	width: 50px;
+	margin-top: 5px;
+    margin-left: 5px;
+}
+.Highlighted {
+	border: 2px solid yellow;
+}
+.fired {
+	z-index: 5;
+	position: fixed;
+}
+.hide {
+	visibility: hidden;
+	width: 0px;
+	height: 0px;
+}
