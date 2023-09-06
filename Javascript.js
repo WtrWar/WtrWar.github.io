@@ -117,7 +117,7 @@ function GameStart() {
 		for (let i = 0; i < ImgNames.length; i++)
 		{
 			let TempImg = new Image();
-			TempImg.src = `${ImgNames[i]}.png`;
+			TempImg.src = `https://WtrWar.github.io/${ImgNames[i]}.png`;
 			GameImgs.push(TempImg);
 		}
 		clearInterval(checking);
@@ -302,7 +302,7 @@ function Usage() {
 	{
 		if (Inventory[event.key-1] != HealerList[i].Type) continue;
 		Inventory[event.key-1] = "";
-		HeldImg.src = "https://fizzy-friday.github.io/GearSquare.png";
+		HeldImg.src = "https://WtrWar.github.io/GearSquare.png";
 		InHeal = true;
 		ElementNum = i;
 		HealTime = HealerList[ElementNum].Duration/1000;
