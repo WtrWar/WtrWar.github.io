@@ -24,7 +24,6 @@ const db = firebase.firestore();
 
 
 async function TheFunction() {
-	
 	var ref = doc(db, "Game", "PlayerData");
 	const docSnap = await getDoc(ref);
 	if (docSnap.exists()) {
@@ -35,6 +34,7 @@ async function TheFunction() {
 	}
 }
 Page.onclick = TheFunction;
+
 
 // PERSONAL VARIABLES
 var Zones = [
