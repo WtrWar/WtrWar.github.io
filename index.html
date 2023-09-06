@@ -45,14 +45,16 @@
 		<img id="Held4" src="GearSquare.png" alt="Tile4" class="Held" onclick="EmptyInventory()">
 		<h3 id="HealInfo"></h3>
 	  </div> 
-	  <canvas id="Map" width="200px" height="200px"></canvas>
+	  <canvas id="WorldMap" width="200px" height="200px"></canvas>
 		
 	</div>
 	
-	
-	<script type="module">
-	    import { initializeApp } from 'firebase/app';
 
+	<script type="module">
+		import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js'
+		import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js'
+	    //import { initializeApp } from 'firebase/app';
+		
 		const firebaseConfig = {
 		  apiKey: "AIzaSyAG48CZGZb0KwGGA0s8lZKRG3xTDpOrL4Q",
 		  authDomain: "external-project-server.firebaseapp.com",
@@ -64,6 +66,7 @@
 		};
 
 		const app = initializeApp(firebaseConfig);
+		//const db = firebase.firestore();
 	</script>
 	
 

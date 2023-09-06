@@ -3,6 +3,7 @@
 
 #Page {
 	overflow: hidden;
+	background-color: lightcyan;
 }
 #EnterGame {
 	height: 40px;
@@ -81,7 +82,7 @@
     margin-left: 5px;
 }
 .Highlighted {
-	border: 2px solid yellow;
+	border: 2px solid red;
 }
 .fired {
 	z-index: 5;

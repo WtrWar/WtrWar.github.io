@@ -1,20 +1,18 @@
-// GitHub:
-// Inspect can use Console Commands to cheat (change speed)
-
 // Suggestions:
 // Cancelling healing
  
 // To add:
-// Improved game ending for when player leaves
 // less movement speed when diagonal
 // Put Images into an object
 // Multiplayer
-// Knowing the range by showing on screen
+
+
+//const Info = db.collection('Game').doc('TheZone');
 
 
 // PERSONAL VARIABLES
 var Zones = [
-	{Length: 50, Sizing: 2600, Dmg: 5}, 
+	{Length: 50, Sizing: 2600, Dmg: 500}, 
 	{Length: 50, Sizing: 1800, Dmg: 8}, 									
 	{Length: 30, Sizing: 1600, Dmg: 12},
 	{Length: 60, Sizing: 1200, Dmg: 15},
@@ -35,14 +33,12 @@ var HealerList = [
 var GearList = [
 	{Type: "WaterPistol", FireDelay: 0.2, Range: 350, MinRange: 0, Dmg: 8},
 	{Type: "WaterGun", FireDelay: 0.6, Range: 450, MinRange: 0, Dmg: 26},
-	//{Type: "Sniper", FireDelay: 1.3, Range: 600, MinRange: 300, Dmg: 95}
+	{Type: "WaterBalloon", FireDelay: 1.3, Range: 500, MinRange: 250, Dmg: 95},
 ]
 var Keys = [];
-
 var checking, zonerun, PlayerID, Speed = 5, HP = 100, Shield = 0, ElementNum, PlayPosNum;
-var InGame = false, InHeal = false, HeldImg='', Practice = false, CurrentSlot=-1;
-var myX, myY, type;
-var Temp1X, Temp1Y, Temp2X, Temp2Y, TempLength, Temp2Length, FireTime=0, HealTime=0;
+var InGame = false, InHeal = false, HeldImg='', Practice = false, CurrentSlot = -1;
+var myX, myY, FireTime=0, HealTime=0;
 
 // MULTIPLAYER VARIABLES
 var TheZone = {TopX: 0, TopY: 0, BottomX: 3000, BottomY: 3000, Time: Zones[0].Length, Shrink: 3000-Zones[0].Sizing, CurrentZone: 1};
@@ -53,44 +49,31 @@ var PlayerPos = [{X: 50, Y: 50}, {X: 2950, Y: 50}, {X: 50, Y: 2950}, {X: 2950, Y
 var PlayerCount = 0;
 
 
-let Map = document.getElementById("Map");
-var map = Map.getContext("2d");
+var map = WorldMap.getContext("2d");
 map.fillStyle = "lightgreen";
 map.fillRect(0, 0, Map.width, Map.height);
 var ctx = World.getContext("2d");
 
-// For github version, put "https://WtrWar.github.io/" before img src
+// https://WtrWar.github.io/ImgName.png
+var GameImgs = [];
+var ImgNames = [];
+for (let i = 0; i < GearList.length; i++) ImgNames.push(GearList[i].Type);
+for (let i = 0; i < ItemList.length; i++) ImgNames.push(ItemList[i].Type);
+for (let i = 0; i < HealerList.length; i++)	ImgNames.push(HealerList[i].Type);
+ImgNames.push("Rock");
+ImgNames.push("Bush");
+
 var Playerimg = new Image();
-Playerimg.src = "https://WtrWar.github.io/Orange.png";
+Playerimg.src = "Orange.png";
 var Enemyimg = new Image();
-Enemyimg.src = "https://WtrWar.github.io/Red.png";
-var Umbrellaimg = new Image();
-Umbrellaimg.src = "https://WtrWar.github.io/Umbrella.png";
-var Smokeimg = new Image();
-Smokeimg.src = "https://WtrWar.github.io/Smoke.png";
-var Speedimg = new Image();
-Speedimg.src = "https://WtrWar.github.io/Speed.png";
-var Coatimg = new Image();
-Coatimg.src = "https://WtrWar.github.io/Coat.png";
-var Towelimg = new Image();
-Towelimg.src = "https://WtrWar.github.io/Towel.png";
-var Dryerimg = new Image();
-Dryerimg.src = "https://WtrWar.github.io/Dryer.png";
-var WaterPistolimg = new Image();
-WaterPistolimg.src = "https://WtrWar.github.io/WaterPistol.png";
-var WaterGunimg = new Image();
-WaterGunimg.src = "https://WtrWar.github.io/WaterGun.png";
-var Rockimg = new Image();
-Rockimg.src = "https://WtrWar.github.io/Rock.png";
-var Bushimg = new Image();
-Bushimg.src = "https://WtrWar.github.io/Bush.png";
+Enemyimg.src = "Red.png";
 var Waterimg = new Image();
-Waterimg.src = "https://WtrWar.github.io/Water.png";
+Waterimg.src = "Water.png";
 
 
 // GAME LOAD FUNCTIONS
 function GameGeneration() {
-	for (var i = 0; i < 85; i++) // 20 Gear, 15 items, 20 Healers, 20 rocks, 10 bushes. make easy to adjust using a list
+	for (var i = 0; i < 85; i++) // 20 Gear, 15 items, 20 Healers, 20 rocks, 10 bushes
 	{
 		if (i < 55)
 		{
@@ -111,7 +94,7 @@ function GameGeneration() {
 			Collision = false;
 			for (let j = 0; j < SpawnedImgs.length; j++)
 			{
-				if (Xcoord == SpawnedImgs[j].X & Ycoord == SpawnedImgs[j].Y) // never met
+				if (Xcoord == SpawnedImgs[j].X & Ycoord == SpawnedImgs[j].Y)
 				{
 					Collision = true;
 					Xcoord = (Math.ceil(Math.random()*29))*100;
@@ -131,6 +114,12 @@ function GameStart() {
 	YourId.textContent = `ID: ${PlayerID}`;
 	if (PlayerCount == 4 | Practice == true)
 	{
+		for (let i = 0; i < ImgNames.length; i++)
+		{
+			let TempImg = new Image();
+			TempImg.src = `${ImgNames[i]}.png`;
+			GameImgs.push(TempImg);
+		}
 		clearInterval(checking);
 		if (PlayerID.at(-1) == '4' | Practice == true) GameGeneration();
 		InGame = true;
@@ -161,7 +150,7 @@ function EmptyInventory() {
 	let Slot = (event.target.id).at(-1);
 	Inventory[Slot-1] = ""; // not working. CurrentSlot undefined.
 	HeldImg = document.getElementById(`${event.target.id}`);
-	HeldImg.src = "https://fizzy-friday.github.io/GearSquare.png";
+	HeldImg.src = "https://WtrWar.github.io/GearSquare.png";
 }
 
 function Fire() {
@@ -263,22 +252,18 @@ function PickUp() {
 			{
 				if (CollideCheck(PlayerPos[PlayerNum].X, SpawnedImgs[i].X, PlayerPos[PlayerNum].Y, SpawnedImgs[i].Y, 40, 30) == true)
 				{
-					let num = -1;
 					for (let j = 0; j < Inventory.length; j++)
 					{
 						if (Inventory[j] == "")
 						{
-							num = j+1;
-							type = SpawnedImgs[i].Type;
-							break;
+							Inventory[j] = SpawnedImgs[i].Type;
+							HeldImg = document.getElementById(`Held${j+1}`);
+							let type = SpawnedImgs[i].Type;
+							HeldImg.src = `https://WtrWar.github.io/${type}.png`;
+							SpawnedImgs.splice(i, 1);
+							return;
 						}
 					}
-					if (num == -1) return;
-					Inventory[num-1] = SpawnedImgs[i].Type;
-					HeldImg = document.getElementById(`Held${num}`);
-					HeldImg.src = `https://fizzy-friday.github.io/${type}.png`; // Show picked up in inventory, and the slot
-					SpawnedImgs.splice(i, 1);
-					return;
 				}
 			}
 		}
@@ -347,7 +332,7 @@ EnterGame.onclick = MatchMake;
 
 function UpdateScreen() {
 	window.requestAnimationFrame(UpdateScreen);
-	
+
 	if (HealTime > 0)
 	{
 	    HealInfo.textContent = `${Math.ceil(HealTime)}s`;
@@ -357,11 +342,9 @@ function UpdateScreen() {
 	
 	myX = PlayerPos[PlayerNum].X;	
 	myY = PlayerPos[PlayerNum].Y;
-	
 	let topx = TheZone.TopX - myX + World.width/2;
 	let topy = TheZone.TopY - myY + World.height/2;
 	let bottomx = TheZone.BottomX - myX + World.width/2;
-	
 	let dist = bottomx-topx; // changing when player moves
 	
 	ctx.fillStyle = "blue";
@@ -380,23 +363,35 @@ function UpdateScreen() {
     ctx.drawImage(Playerimg, World.width/2, World.height/2, 40, 40);
 	for (let i = 0; i < SpawnedImgs.length; i++) // Rocks, items etc
 	{
-		if (ScreenCheck(SpawnedImgs[i].X, SpawnedImgs[i].Y, "NoDraw", 0) == true)
+		let x = SpawnedImgs[i].X;
+		let y = SpawnedImgs[i].Y;
+		for (let j = 0; j < GameImgs.length; j++)
 		{
-			let x = SpawnedImgs[i].X - myX + World.width/2;
-			let y = SpawnedImgs[i].Y - myY + World.height/2;
-			if (SpawnedImgs[i].Type == "Umbrella") ctx.drawImage(Umbrellaimg, x, y, 30, 30);
-			if (SpawnedImgs[i].Type == "Smoke") ctx.drawImage(Smokeimg, x, y, 30, 30);
-			if (SpawnedImgs[i].Type == "Speed") ctx.drawImage(Speedimg, x, y, 30, 30);
-			if (SpawnedImgs[i].Type == "Coat") ctx.drawImage(Coatimg, x, y, 30, 30);
-			if (SpawnedImgs[i].Type == "Towel") ctx.drawImage(Towelimg, x, y, 30, 30);
-			if (SpawnedImgs[i].Type == "Dryer") ctx.drawImage(Dryerimg, x, y, 30, 30);
-			if (SpawnedImgs[i].Type == "WaterPistol") ctx.drawImage(WaterPistolimg, x, y, 30, 30);
-			if (SpawnedImgs[i].Type == "WaterGun") ctx.drawImage(WaterGunimg, x, y, 30, 30);
-			if (SpawnedImgs[i].Type == "Rock") ctx.drawImage(Rockimg, x, y, 90, 90);
-			if (SpawnedImgs[i].Type == "Bush") ctx.drawImage(Bushimg, x, y, 90, 90);
+			if (SpawnedImgs[i].Type == ImgNames[j]) // ImgNames and GameImgs Parallel
+			{
+				if (SpawnedImgs[i].Type != "Rock" & SpawnedImgs[i].Type != "Bush")
+				{
+					ScreenCheck(x, y, GameImgs[j], 30);
+					continue;
+				}
+				ScreenCheck(x, y, GameImgs[j], 90);
+			}
 		}
 	}
-	FireTime += (1/60);
+	for (let i = 0; i < GearList.length; i++)
+	{
+		if (Inventory[CurrentSlot] == GearList[i].Type & HeldImg != null)
+		{
+			ctx.setLineDash([8, 15]);
+			ctx.beginPath();
+			ctx.arc(World.width/2, World.height/2, GearList[i].Range, 0, 2*Math.PI);
+			ctx.stroke();
+			ctx.beginPath();
+			ctx.arc(World.width/2, World.height/2, GearList[i].MinRange, 0, 2*Math.PI);
+			ctx.stroke();
+		}
+	}
+	FireTime += (1/60);	
 	for (let i = 0; i < FiredWater.length; i++) // Make fired waters appear
 	{
 		ScreenCheck(FiredWater[i].X, FiredWater[i].Y, Waterimg, 30);
@@ -419,16 +414,13 @@ function UpdateScreen() {
 		{
 			if (SpawnedImgs[j].Type == "Rock")
 	        {
-				ScreenCheck(FiredWater[i].X, FiredWater[i].Y, "NoDraw", 0);
 			    if (CollideCheck(FiredWater[i].X, SpawnedImgs[j].X, FiredWater[i].Y, SpawnedImgs[j].Y, 30, 90) == true)
 				{
 					FiredWater.splice(i, 1);
 				}
 			}
-		}
-		let TargetDist = 5;			
-
-		if (CollideCheck(FiredWater[i].X, FiredWater[i].TargetX, FiredWater[i].Y, FiredWater[i].TargetY, TargetDist, TargetDist) == true)
+		}					
+		if (CollideCheck(FiredWater[i].X, FiredWater[i].TargetX, FiredWater[i].Y, FiredWater[i].TargetY, 5, 5) == true)
 		{
 			FiredWater.splice(i, 1);
 			continue;
@@ -486,24 +478,26 @@ function ZoneSystem() {
 } 
 
 // OTHER FUNCTIONS
-function ControlsScreen() {alert("Press 1/2/3 to swap to a gear. Press 4 to use Item. WASD for moving")}
+function ControlsScreen() {alert("Press 1/2/3/4 for changing in inventory. WASD for moving. Click when holding a gear and within indicated circle to fire.")}
 Controls.onclick = ControlsScreen;
 
-
 function GameEnded() { // Needs improving to work for when player leaves
-	if (Practice == false);
+	if (Practice == false)
 	{
 		PlayerCount--;
 		Placements[PlayerCount] = PlayerID;
-		if (HP > 0 | PlayerCount == 1) alert("You won");
+		if (PlayerCount == 1 & InGame == true) alert("You won");
 		else alert("You lost");
 		alert(`PLACEMENTS\n\n1st: ${Placements[0]}\n2nd: ${Placements[1]}\n3rd: ${Placements[2]}\n4th: ${Placements[3]}`);
 	}
 	if (Practice == true) alert("You were eliminated");
+	clearInterval(zonerun);
 	location.reload();
 }
 
 function RemovePlayer() {
+	InGame == false;
+	PlayerCount--;
 	PlayerPos[PlayerNum].X = 4000;
 	PlayerPos[PlayerNum].Y = 4000;
 	GameEnded();
