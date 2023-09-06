@@ -64,11 +64,11 @@ ImgNames.push("Rock");
 ImgNames.push("Bush");
 
 var Playerimg = new Image();
-Playerimg.src = "Orange.png";
+Playerimg.src = "https://WtrWar.github.io/Orange.png";
 var Enemyimg = new Image();
-Enemyimg.src = "Red.png";
+Enemyimg.src = "https://WtrWar.github.io/Red.png";
 var Waterimg = new Image();
-Waterimg.src = "Water.png";
+Waterimg.src = "https://WtrWar.github.io/Water.png";
 
 
 // GAME LOAD FUNCTIONS
