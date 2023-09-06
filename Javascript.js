@@ -1,14 +1,33 @@
+// Multiplayer:
+// Read the PlayerCount
+
 // Suggestions:
 // Cancelling healing
  
 // To add:
 // less movement speed when diagonal
-// Put Images into an object
-// Multiplayer
+// Non square player/enemy, rotating based on mouse angle
 
 
-//const Info = db.collection('Game').doc('TheZone');
+var A = db.collection('Game');
+console.log("A: " + A);
+var B = db.collection('Game').doc('PlayerData');
+console.log("B: " + B);
+var C = db.collection('Game').doc('PlayerData').get();
+console.log("C: " + C);
 
+var Player = {}
+async function TheFunction() {
+	Player = {num};
+	// num is not defined
+	try {
+		console.log("Attempting");
+		Player.num = await this.db.collection('Game').doc('PlayerData').get(); // Complains with 'get()'
+		console.log("D: " + Player.num);
+	}
+	catch{}
+}
+Page.onclick = TheFunction;
 
 // PERSONAL VARIABLES
 var Zones = [
@@ -63,7 +82,6 @@ for (let i = 0; i < ItemList.length; i++) ImgNames.push(ItemList[i].Type);
 for (let i = 0; i < HealerList.length; i++)	ImgNames.push(HealerList[i].Type);
 ImgNames.push("Rock");
 ImgNames.push("Bush");
-
 var Playerimg = new Image();
 Playerimg.src = "https://WtrWar.github.io/Orange.png";
 var Enemyimg = new Image();

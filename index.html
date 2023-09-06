@@ -1,9 +1,9 @@
 <!doctype html>
 <html>
 <head>
-<meta charset="utf-8">
-<link rel="stylesheet" href="Styling.css">
-<title>game</title>
+	<meta charset="utf-8">
+	<link rel="stylesheet" href="Styling.css">
+	<title>game</title>
 </head>
 <body id="Page">
 	<div id="Menu">
@@ -48,27 +48,34 @@
 	  <canvas id="WorldMap" width="200px" height="200px"></canvas>
 		
 	</div>
-	
 
-	<!--<script type="module">
-		import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js'
-		import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js'
-	    import { initializeApp } from 'firebase/app';
-		
+	
+	<script src="https://www.gstatic.com/firebasejs/8.2.0/firebase-app.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/8.1.2/firebase-firestore.js"></script><script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>	
+	
+	<script type="module">
+	    //import { doc, getDoc } from "firebase/firestore";
+	</script>
+	
+	<script>
+		//import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js'
+		//import { getAuth } from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js'
+		//import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js'
 		const firebaseConfig = {
-		  apiKey: "AIzaSyAG48CZGZb0KwGGA0s8lZKRG3xTDpOrL4Q",
-		  authDomain: "external-project-server.firebaseapp.com",
-		  databaseURL: "https://external-project-server-default-rtdb.firebaseio.com",
-		  projectId: "external-project-server",
-		  storageBucket: "external-project-server.appspot.com",
-		  messagingSenderId: "536769510308",
-		  appId: "1:536769510308:web:dda587033dfd9d054b1f31"
+			  apiKey: "AIzaSyAG48CZGZb0KwGGA0s8lZKRG3xTDpOrL4Q",
+			  authDomain: "external-project-server.firebaseapp.com",
+			  databaseURL: "https://external-project-server-default-tdb.firebaseio.com",
+		      projectId: "external-project-server",
+			  storageBucket: "external-project-server.appspot.com",
+			  messagingSenderId: "536769510308",
+			  appId: "1:536769510308:web:dda587033dfd9d054b1f31"
 		};
-
-		const app = initializeApp(firebaseConfig);
-		//const db = firebase.firestore();
-	</script>-->
-	
+		
+		// Initialize Firebase
+		firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+	  </script>
+		
 
 <script src="Javascript.js"></script>	
 </body>
