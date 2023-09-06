@@ -9,29 +9,36 @@
 // Non square player/enemy, rotating based on mouse angle
 
 
-var A = db.collection('Game');
-console.log("A: " + A);
-var B = db.collection('Game').doc('PlayerData');
-console.log("B: " + B);
-var C = db.collection('Game').doc('PlayerData').get();
-console.log("C: " + C);
+const firebaseConfig = {
+	apiKey: "AIzaSyAG48CZGZb0KwGGA0s8lZKRG3xTDpOrL4Q",
+    authDomain: "external-project-server.firebaseapp.com",
+	databaseURL: "https://external-project-server-default-tdb.firebaseio.com",
+	projectId: "external-project-server",
+	storageBucket: "external-project-server.appspot.com",
+	messagingSenderId: "536769510308",
+	appId: "1:536769510308:web:dda587033dfd9d054b1f31"
+};
+		
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-var Player = {}
+
 async function TheFunction() {
-	Player = {num};
-	// num is not defined
-	try {
-		console.log("Attempting");
-		Player.num = await this.db.collection('Game').doc('PlayerData').get(); // Complains with 'get()'
-		console.log("D: " + Player.num);
+	
+	var ref = doc(db, "Game", "PlayerData");
+	const docSnap = await getDoc(ref);
+	if (docSnap.exists()) {
+		console.log(docSnap.data().PlayerCount);
 	}
-	catch{}
+	else {
+		console.log("Error");
+	}
 }
 Page.onclick = TheFunction;
 
 // PERSONAL VARIABLES
 var Zones = [
-	{Length: 50, Sizing: 2600, Dmg: 500}, 
+	{Length: 50, Sizing: 2600, Dmg: 5}, 
 	{Length: 50, Sizing: 1800, Dmg: 8}, 									
 	{Length: 30, Sizing: 1600, Dmg: 12},
 	{Length: 60, Sizing: 1200, Dmg: 15},
@@ -403,9 +410,11 @@ function UpdateScreen() {
 			ctx.setLineDash([8, 15]);
 			ctx.beginPath();
 			ctx.arc(World.width/2, World.height/2, GearList[i].Range, 0, 2*Math.PI);
+			ctx.strokeStyle = "black";
 			ctx.stroke();
 			ctx.beginPath();
 			ctx.arc(World.width/2, World.height/2, GearList[i].MinRange, 0, 2*Math.PI);
+			ctx.strokeStyle = "red";
 			ctx.stroke();
 		}
 	}
@@ -496,7 +505,7 @@ function ZoneSystem() {
 } 
 
 // OTHER FUNCTIONS
-function ControlsScreen() {alert("Press 1/2/3/4 for changing in inventory. WASD for moving. Click when holding a gear and within indicated circle to fire.")}
+function ControlsScreen() {alert("Press 1/2/3/4 for changing in inventory. WASD for moving. Click when holding a gear and within the black circle, but outside the red circle (if visible) to fire")}
 Controls.onclick = ControlsScreen;
 
 function GameEnded() { // Needs improving to work for when player leaves
