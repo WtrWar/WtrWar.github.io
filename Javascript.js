@@ -49,9 +49,10 @@ var PlayerPos = [{X: 50, Y: 50}, {X: 2950, Y: 50}, {X: 50, Y: 2950}, {X: 2950, Y
 var PlayerCount = 0;
 
 
-var map = WorldMap.getContext("2d");
-map.fillStyle = "lightgreen";
-map.fillRect(0, 0, Map.width, Map.height);
+var WorldMap = document.getElementById("WorldMap");
+var Minimap = WorldMap.getContext("2d");
+Minimap.fillStyle = "lightgreen";
+Minimap.fillRect(0, 0, WorldMap.width, WorldMap.height);
 var ctx = World.getContext("2d");
 
 // https://WtrWar.github.io/ImgName.png
@@ -161,8 +162,7 @@ function Fire() {
 			FireTime = 0;
 		    let Xdist = event.clientX - 8 - World.width/2;
 			let Ydist = event.clientY - 8 - World.height/2;
-            // These are likely causing the water to not dissapear when hitting target
-				
+
 			let Dist = Math.sqrt((Xdist*Xdist) + (Ydist*Ydist));// Dist formula
 			if (Dist < GearList[i].MinRange | Dist > GearList[i].Range) return;
 			// To standardize speed (by making water travel 10px per run), Dist/A = 10
@@ -246,9 +246,9 @@ function Moving() {
 function PickUp() {
 	for (let i = 0; i < SpawnedImgs.length; i++)
 	{
-		if (ScreenCheck(SpawnedImgs[i].X, SpawnedImgs[i].Y, "NoDraw", 0))
+		if (SpawnedImgs[i].Type != "Bush" & SpawnedImgs[i].Type != "Rock")
 		{
-			if (SpawnedImgs[i].Type != "Bush" & SpawnedImgs[i].Type != "Rock")
+			if (ScreenCheck(SpawnedImgs[i].X, SpawnedImgs[i].Y, "NoDraw", 0))
 			{
 				if (CollideCheck(PlayerPos[PlayerNum].X, SpawnedImgs[i].X, PlayerPos[PlayerNum].Y, SpawnedImgs[i].Y, 40, 30) == true)
 				{
@@ -446,12 +446,12 @@ function ZoneSystem() {
 	// Changing the World from 3000 -> 200 (15 times smaller)
 	let left = (TheZone.TopX)/15;
 	let ZoneSize = (TheZone.BottomX-TheZone.TopX)/15;
-	map.fillStyle = "blue";
-	map.fillRect(0, 0, 200, 200);
-	map.fillStyle = "lightgreen";
-	map.fillRect(left, left, ZoneSize, ZoneSize); // Drawn zone shrinking, but moving left
-	map.fillStyle = "black";
-	map.fillRect((PlayerPos[PlayerNum].X)/15, PlayerPos[PlayerNum].Y/15, 40/15, 40/15);
+	Minimap.fillStyle = "blue";
+	Minimap.fillRect(0, 0, 200, 200);
+	Minimap.fillStyle = "lightgreen";
+	Minimap.fillRect(left, left, ZoneSize, ZoneSize);
+	Minimap.fillStyle = "black";
+	Minimap.fillRect((PlayerPos[PlayerNum].X)/15, PlayerPos[PlayerNum].Y/15, 40/15, 40/15);
 	
 	if (CollideCheck(PlayerPos[PlayerNum].X, TheZone.TopX, PlayerPos[PlayerNum].Y, TheZone.TopY, 40, TheZone.BottomX-TheZone.TopX) == false)
 	{
