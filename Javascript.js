@@ -456,7 +456,7 @@ function UpdateScreen() {
 	if (Practice == false)
 	{
 		Read("PlayerData");
-		for (let i = 0; i < 4; i++) // make Opponents appear (Be red)
+		for (let i = 1; i < 5; i++) // make Opponents appear (Be red)
 		{	
 			if (i == PlayerNum) continue;
 			if (i == 1)
