@@ -53,13 +53,16 @@ var InGame = false, InHeal = false, HeldImg='', Practice = false, CurrentSlot = 
 var myX, myY, FireTime=0, HealTime=0;
 
 // MULTIPLAYER VARIABLES
+
+// These will become Personal
 var TheZone = {TopX: 0, TopY: 0, BottomX: 3000, BottomY: 3000, Time: Zones[0].Length, Shrink: 3000-Zones[0].Sizing, CurrentZone: 1};
 var Placements = ["???", "???", "???", "???"];
 var SpawnedImgs = [];
 var FiredWater = []; // All water projectile locations, dmg, direction, target spot
 var PlayerPos = [{X: 50, Y: 50}, {X: 2950, Y: 50}, {X: 50, Y: 2950}, {X: 2950, Y: 2950}];
-var Doc = {}, EnteredGame = false;
 
+
+var Doc = {}, EnteredGame = false;
 
 var WorldMap = document.getElementById("WorldMap");
 var Minimap = WorldMap.getContext("2d");
@@ -125,7 +128,7 @@ function GameStart() {
 	{
 		Read("PlayerData");
 		Doc.PlayerCount += 1;
-		//Update("PlayerData"); // To prevent scaling pop number until dealt with (temporary)
+		Update("PlayerData");
 		EnteredGame = true;
 	}
 	let PlayerCount = Doc.PlayerCount;
@@ -168,9 +171,23 @@ function Update(DataType) {
     if (DataType == 'PlayerData')
 	{
 		db.collection('Game').doc('PlayerData').update({
-	    	"PlayerCount": Doc.PlayerCount
+	    	"PlayerCount": Doc.PlayerCount,
+			"Player1x": Doc.Player1x,
+			"Player1y": Doc.Player1y,
+			"Player2x": Doc.Player2x,
+			"Player2y": Doc.Player2y,
+			"Player3x": Doc.Player3x,
+			"Player3y": Doc.Player3y,
+			"Player4x": Doc.Player4x,
+			"Player4y": Doc.Player4y
 	    })
 	}
+	if (DataType == 'SpawnedImgs')
+	{
+		db.collection('Game').doc('SpawnedImgs').update({
+	    	//"PlayerCount": Doc.PlayerCount
+	    })
+	}		
 }
 // As the first piece of data to be read will be PlayerData (to enter a game), and that the first time the function is called, there is a small delay:
 Read("PlayerData");
