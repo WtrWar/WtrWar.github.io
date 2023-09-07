@@ -100,8 +100,8 @@ function GameGeneration() {
 		}
 		if (i >= 55 & i < 75) var Selection = "Rock";
 		if (i >= 75) var Selection = "Bush";
-		var Xcoord = (Math.ceil(Math.random()*29))*100;
-		var Ycoord = (Math.ceil(Math.random()*29))*100;
+		var Xcoord = (Math.ceil(Math.random()*28))*100;
+		var Ycoord = (Math.ceil(Math.random()*28))*100;
 		
 		var Collision = true;
 		while (Collision == true)
@@ -251,11 +251,31 @@ function Heal() {
 
 function Moving() {	
 	if (InGame == false | InHeal == true) return;
-	
-	if (Keys[87] == true) PlayerPos[PlayerNum].Y -= Speed;
-	if (Keys[83] == true) PlayerPos[PlayerNum].Y += Speed;
-	if (Keys[65] == true) PlayerPos[PlayerNum].X -= Speed;
-	if (Keys[68] == true) PlayerPos[PlayerNum].X += Speed;
+	Read("PlayerData");
+	if (PlayerNum == 1)
+	{
+	    let x = Doc.Player1x;
+	    let y = Doc.Player1y;
+	}
+	if (PlayerNum == 2)
+	{
+	    let x = Doc.Player2x;
+	    let y = Doc.Player2y;
+	}
+	if (PlayerNum == 3)
+	{
+	    let x = Doc.Player3x;
+	    let y = Doc.Player3y;
+	}
+	if (PlayerNum == 4)
+	{
+	    let x = Doc.Player4x;
+	    let y = Doc.Player4y;
+	}
+	if (Keys[87] == true) y -= Speed;
+	if (Keys[83] == true) y += Speed;
+	if (Keys[65] == true) x -= Speed;
+	if (Keys[68] == true) x += Speed;
 	
 	for (let i = 0; i < SpawnedImgs.length; i++)
 	{
@@ -294,10 +314,31 @@ function Moving() {
 			}
 		}
 	}
-	if (PlayerPos[PlayerNum].X > 3000) PlayerPos[PlayerNum].X = 3000;
-	if (PlayerPos[PlayerNum].X < 0) PlayerPos[PlayerNum].X = 0;
-	if (PlayerPos[PlayerNum].Y > 3000) PlayerPos[PlayerNum].Y = 3000;
-	if (PlayerPos[PlayerNum].Y < 0) PlayerPos[PlayerNum].Y = 0;
+	if (PlayerPos[PlayerNum].X > 3000) x = 3000;
+	if (PlayerPos[PlayerNum].X < 0) x = 0;
+	if (PlayerPos[PlayerNum].Y > 3000) y = 3000;
+	if (PlayerPos[PlayerNum].Y < 0) y = 0;
+	if (PlayerNum == 1)
+	{
+	    Doc.Player1x = x;
+	    Doc.Player1y = y;
+	}
+	if (PlayerNum == 2)
+	{
+	    Doc.Player2x = x;
+	    Doc.Player2y = y;
+	}
+	if (PlayerNum == 3)
+	{
+	    Doc.Player3x = x;
+	    Doc.Player3y = y;
+	}
+	if (PlayerNum == 4)
+	{
+	    Doc.Player1x = x;
+	    Doc.Player1y = y;
+	}
+	Update("PlayerData");
 }
 
 function PickUp() {
@@ -411,10 +452,31 @@ function UpdateScreen() {
 	
 	if (Practice == false)
 	{
+		Read("PlayerData");
 		for (let i = 0; i < PlayerPos.length; i++) // make Opponents appear (Be red)
 		{	
 			if (i == PlayerNum) continue;
-			ScreenCheck(PlayerPos[i].X, PlayerPos[i].Y, Enemyimg, 40)
+			if (i == 1)
+			{
+				let x = Doc.Player1x;
+				let y = Doc.Player1y;
+			}
+			if (i == 2)
+			{
+				let x = Doc.Player2x;
+				let y = Doc.Player2y;
+			}
+			if (i == 3)
+			{
+				let x = Doc.Player3x;
+				let y = Doc.Player3y;
+			}
+			if (i == 4)
+			{
+				let x = Doc.Player4x;
+				let y = Doc.Player4y;
+			}
+			ScreenCheck(x, y, Enemyimg, 40)
 		}
 	}
     ctx.drawImage(Playerimg, World.width/2, World.height/2, 40, 40);
@@ -544,7 +606,9 @@ Controls.onclick = ControlsScreen;
 function GameEnded() { // Needs improving to work for when player leaves
 	if (Practice == false)
 	{
-		PlayerCount--;
+		Read("PlayerCount");
+		Doc.PlayerCount--;
+		Update("PlayerData");
 		Placements[PlayerCount] = PlayerID;
 		if (PlayerCount == 1 & InGame == true) alert("You won");
 		else alert("You lost");
