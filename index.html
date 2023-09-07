@@ -9,14 +9,14 @@
 	<div id="Menu">
 	  <h1 class="maintitle">game</h1><br>
 	  <input id="Name" type="text" value="EnterName" autocomplete="off"/><br><br><br><br>
-	  <button id="EnterGame" class="hide">Multiplayer</button><br><br>
+	  <button id="EnterGame">Multiplayer</button><br><br>
 	  <button id="EnterPractice">Practice</button><br><br>
 	  <button id="Controls">Controls</button><br><br>
 	  <button id="HTP">How to play</button>
 	</div>
 		
 	<div id="Load" class="hide">
-	  <h2 id="LoadPlayer">Loading, 1/4 Players</h2>
+	  <h2 id="LoadPlayer">Loading, 0/4 Players</h2>
 	  <h3 id="YourId">___</h3>
 	  <h3>Make sure Caps Lock is turned off</h3>
 	</div>
@@ -54,9 +54,9 @@
 	<script src="https://www.gstatic.com/firebasejs/8.1.2/firebase-firestore.js"></script>
 	
 	<script type="module">
-	    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js'
-		import { getAuth } from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js'
-		import {getFirestore, doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteDoc, deleteField} from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js'
+	    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js';
+		import { getAuth } from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js';
+	    //import { getFirestore, doc, getDoc, collection } from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js';
 	</script>
 
 	

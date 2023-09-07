@@ -1,5 +1,5 @@
 // Multiplayer:
-// Read the PlayerCount
+// RemovePlayer not called when reloading page, quitting or Ctrl+R
 
 // Suggestions:
 // Cancelling healing
@@ -11,30 +11,16 @@
 
 const firebaseConfig = {
 	apiKey: "AIzaSyAG48CZGZb0KwGGA0s8lZKRG3xTDpOrL4Q",
-    authDomain: "external-project-server.firebaseapp.com",
+	authDomain: "external-project-server.firebaseapp.com",
 	databaseURL: "https://external-project-server-default-tdb.firebaseio.com",
 	projectId: "external-project-server",
 	storageBucket: "external-project-server.appspot.com",
 	messagingSenderId: "536769510308",
 	appId: "1:536769510308:web:dda587033dfd9d054b1f31"
 };
-		
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-
-
-async function TheFunction() {
-	var ref = doc(db, "Game", "PlayerData");
-	const docSnap = await getDoc(ref);
-	if (docSnap.exists()) {
-		console.log(docSnap.data().PlayerCount);
-	}
-	else {
-		console.log("Error");
-	}
-}
-Page.onclick = TheFunction;
-
+		
 
 // PERSONAL VARIABLES
 var Zones = [
@@ -72,7 +58,7 @@ var Placements = ["???", "???", "???", "???"];
 var SpawnedImgs = [];
 var FiredWater = []; // All water projectile locations, dmg, direction, target spot
 var PlayerPos = [{X: 50, Y: 50}, {X: 2950, Y: 50}, {X: 50, Y: 2950}, {X: 2950, Y: 2950}];
-var PlayerCount = 0;
+var Doc = {}, EnteredGame = false;
 
 
 var WorldMap = document.getElementById("WorldMap");
@@ -135,7 +121,14 @@ function GameGeneration() {
 }
 
 function GameStart() {
-	// Grab playercount
+	if (EnteredGame == false)
+	{
+		Read("PlayerData");
+		Doc.PlayerCount += 1;
+		//Update("PlayerData"); // To prevent scaling pop number until dealt with (temporary)
+		EnteredGame = true;
+	}
+	let PlayerCount = Doc.PlayerCount;
 	LoadPlayer.textContent = `Loading, ${PlayerCount}/4 Players`;
 	YourId.textContent = `ID: ${PlayerID}`;
 	if (PlayerCount == 4 | Practice == true)
@@ -159,6 +152,28 @@ function GameStart() {
 	}
 }
 
+function Read(DataType) {
+	db.collection('Game').get().then((snapshot) => {
+	    snapshot.docs.forEach(doc => {
+			if (doc.id == DataType)
+			{
+				Doc = doc.data(); // Returns all data with global variable
+				return;
+			}
+	    })
+	})
+}
+
+function Update(DataType) {
+    if (DataType == 'PlayerData')
+	{
+		db.collection('Game').doc('PlayerData').update({
+	    	"PlayerCount": Doc.PlayerCount
+	    })
+	}
+}
+// As the first piece of data to be read will be PlayerData (to enter a game), and that the first time the function is called, there is a small delay:
+Read("PlayerData");
 
 // PERSONAL FUNCTIONS
 function CollideCheck(X1, X2, Y1, Y2, Length1, Length2) {
@@ -341,18 +356,18 @@ document.onkeypress = Usage;
 
 // MULTIPLAYER FUNCTIONS
 function MatchMake() {
-    // Grab player count
+	let PlayerCount = Doc.PlayerCount;
+	
 	if (Name.value.length < 3) alert("Player name too short");
 	if (Name.value.length > 15) alert("Player name too long");
-	if (PlayerCount == 4) alert("The game is full. Try again later");
-	if (Name.value.length < 3 | Name.value.length > 15 | PlayerCount == 4) return;
+	if (PlayerCount >= 4) alert("The game is full. Try again later");
+	if (Name.value.length < 3 | Name.value.length > 15 | PlayerCount >= 4) return;
 	Menu.classList.add("hide");
 	Load.classList.remove("hide");
-	PlayerCount++;
-	// Send player count
-	PlayerID = `${Name.value}${PlayerCount}`;
-	checking = setInterval(GameStart, 500); // Check if there are enough players every 0.5s
-  }
+	PlayerID = `${Name.value}${PlayerCount+1}`;
+	
+	checking = setInterval(GameStart, 200); // Check if there are enough players every 0.2s
+}
 EnterGame.onclick = MatchMake;
 
 function UpdateScreen() {
@@ -504,6 +519,7 @@ function ZoneSystem() {
     }
 } 
 
+
 // OTHER FUNCTIONS
 function ControlsScreen() {alert("Press 1/2/3/4 for changing in inventory. WASD for moving. Click when holding a gear and within the black circle, but outside the red circle (if visible) to fire")}
 Controls.onclick = ControlsScreen;
@@ -523,13 +539,16 @@ function GameEnded() { // Needs improving to work for when player leaves
 }
 
 function RemovePlayer() {
+	Read("PlayerData");
+	Doc.PlayerCount = 0;
+	Update("PlayerData");
+	alert("Reload");
 	InGame == false;
-	PlayerCount--;
 	PlayerPos[PlayerNum].X = 4000;
 	PlayerPos[PlayerNum].Y = 4000;
 	GameEnded();
 }
-document.onbeforeunload = RemovePlayer;
+document.onbeforeunload = RemovePlayer; // clicking refresh won't lead to game resetting player 
 
 function HowToPlay() {
 	alert("Begin a match to be paired against 4 opponents. Click on a nearby gear, item, or healer to pick it up. Click to fire in that direction to eliminate opponents. The starting size is 3000px");
