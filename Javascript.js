@@ -550,7 +550,7 @@ function UpdateScreen() {
 			continue;
 		}
 	}
-	Players.textContent = `${PlayerCount} players`;
+	Players.textContent = `${Doc.PlayerCount} players`;
 } 
 
 function ZoneSystem() { 
