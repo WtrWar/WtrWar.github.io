@@ -124,10 +124,10 @@ function GameGeneration() {
 }
 
 function GameStart() {
+	Read("PlayerData");
 	if (EnteredGame == false)
 	{
-		Read("PlayerData");
-		Doc.PlayerCount += 1;
+	    Doc.PlayerCount += 1;
 		Update("PlayerData");
 		EnteredGame = true;
 	}
