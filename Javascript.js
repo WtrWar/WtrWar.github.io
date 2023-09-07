@@ -437,9 +437,12 @@ function UpdateScreen() {
 		HealTime -= (1/60);
 	}
 	if (HealTime == 0) HealInfo.textContent = "";
-	
-	myX = PlayerPos[PlayerNum].X;	
-	myY = PlayerPos[PlayerNum].Y;
+	Read("PlayerData");
+	if (PlayerNum == 1)
+	{
+		myX = Doc.Player1x;
+		myY = Doc.Player1y;
+	}
 	let topx = TheZone.TopX - myX + World.width/2;
 	let topy = TheZone.TopY - myY + World.height/2;
 	let bottomx = TheZone.BottomX - myX + World.width/2;
@@ -453,7 +456,7 @@ function UpdateScreen() {
 	if (Practice == false)
 	{
 		Read("PlayerData");
-		for (let i = 0; i < PlayerPos.length; i++) // make Opponents appear (Be red)
+		for (let i = 0; i < 4; i++) // make Opponents appear (Be red)
 		{	
 			if (i == PlayerNum) continue;
 			if (i == 1)
