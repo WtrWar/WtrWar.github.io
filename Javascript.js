@@ -1,5 +1,4 @@
 // Multiplayer:
-// RemovePlayer not called when reloading page, quitting or Ctrl+R
 
 // Suggestions:
 // Cancelling healing
@@ -24,12 +23,12 @@ const db = firebase.firestore();
 
 // PERSONAL VARIABLES
 var Zones = [
-	{Length: 50, Sizing: 2600, Dmg: 5}, 
-	{Length: 50, Sizing: 1800, Dmg: 8}, 									
-	{Length: 30, Sizing: 1600, Dmg: 12},
-	{Length: 60, Sizing: 1200, Dmg: 15},
-	{Length: 50, Sizing: 900, Dmg: 20}, 
-	{Length: 60, Sizing: 0, Dmg: 25},   
+	{Length: 15, Sizing: 2600, Dmg: 5}, 
+	{Length: 25, Sizing: 1800, Dmg: 8}, 									
+	{Length: 35, Sizing: 1600, Dmg: 12},
+	{Length: 35, Sizing: 1200, Dmg: 15},
+	{Length: 25, Sizing: 900, Dmg: 20}, 
+	{Length: 15, Sizing: 0, Dmg: 25},   
 ];
 var Inventory = ["", "", "", ""]
 var ItemList = [
@@ -44,31 +43,31 @@ var HealerList = [
 ]
 var GearList = [
 	{Type: "WaterPistol", FireDelay: 0.2, Range: 350, MinRange: 0, Dmg: 8},
-	{Type: "WaterGun", FireDelay: 0.6, Range: 450, MinRange: 0, Dmg: 26},
+	{Type: "WaterGun", FireDelay: 0.5, Range: 450, MinRange: 0, Dmg: 19},
 	{Type: "WaterBalloon", FireDelay: 1.3, Range: 500, MinRange: 250, Dmg: 95},
 ]
 var Keys = [];
-var checking, zonerun, PlayerID, Speed = 5, HP = 100, Shield = 0, ElementNum, PlayPosNum;
+var checking, zonerun, drawing, PlayerID, Speed = 5, HP = 100, Shield = 0, ElementNum, PlayerNum=1;
 var InGame = false, InHeal = false, HeldImg='', Practice = false, CurrentSlot = -1;
 var myX, myY, FireTime=0, HealTime=0;
+var TheZone = {TopX: 0, TopY: 0, BottomX: 3000, BottomY: 3000, Time: Zones[0].Length, Shrink: 3000-Zones[0].Sizing, CurrentZone: 1}; // Same for everyone, so doesn't need to be in firebase
+
 
 // MULTIPLAYER VARIABLES
 
 // These will become Personal
-var TheZone = {TopX: 0, TopY: 0, BottomX: 3000, BottomY: 3000, Time: Zones[0].Length, Shrink: 3000-Zones[0].Sizing, CurrentZone: 1};
 var Placements = ["???", "???", "???", "???"];
 var SpawnedImgs = [];
 var FiredWater = []; // All water projectile locations, dmg, direction, target spot
 var PlayerPos = [{X: 50, Y: 50}, {X: 2950, Y: 50}, {X: 50, Y: 2950}, {X: 2950, Y: 2950}];
-
-
-var Doc = {}, EnteredGame = false;
+var EnteredGame = false, PlayerCount=1;
 
 var WorldMap = document.getElementById("WorldMap");
 var Minimap = WorldMap.getContext("2d");
 Minimap.fillStyle = "lightgreen";
 Minimap.fillRect(0, 0, WorldMap.width, WorldMap.height);
 var ctx = World.getContext("2d");
+
 
 // https://WtrWar.github.io/ImgName.png
 var GameImgs = [];
@@ -124,16 +123,18 @@ function GameGeneration() {
 }
 
 function GameStart() {
-	Read("PlayerData");
-	if (EnteredGame == false)
+	if (Practice == false) Read();
+	if (EnteredGame == false & Practice == false)
 	{
-	    Doc.PlayerCount += 1;
+		PlayerCount++;
+		PlayerID = `${Name.value}${PlayerCount}`;
+		PlayerNum = PlayerCount;
 		Update("PlayerData");
 		EnteredGame = true;
 	}
-	let PlayerCount = Doc.PlayerCount;
 	LoadPlayer.textContent = `Loading, ${PlayerCount}/4 Players`;
 	YourId.textContent = `ID: ${PlayerID}`;
+	
 	if (PlayerCount == 4 | Practice == true)
 	{
 		for (let i = 0; i < ImgNames.length; i++)
@@ -149,48 +150,9 @@ function GameStart() {
 		Game.classList.remove("hide");
 		Info.classList.remove("hide");
 		zonerun = setInterval(ZoneSystem, 1000);
-		PlayerNum = (PlayerID.at(-1))-1;
-		//PlayerID.at(-1) is stating if 1st, 2nd, 3rd, or 4th player to join
-		window.requestAnimationFrame(UpdateScreen);
+		drawing = setInterval(UpdateScreen, 28.5); // 35FPS (Saves on Firebase Reading, but still playable)
 	}
 }
-
-function Read(DataType) {
-	db.collection('Game').get().then((snapshot) => {
-	    snapshot.docs.forEach(doc => {
-			if (doc.id == DataType)
-			{
-				Doc = doc.data(); // Returns all data with global variable
-				return;
-			}
-	    })
-	})
-}
-
-function Update(DataType) {
-    if (DataType == 'PlayerData')
-	{
-		db.collection('Game').doc('PlayerData').update({
-	    	"PlayerCount": Doc.PlayerCount,
-			"Player1x": Doc.Player1x,
-			"Player1y": Doc.Player1y,
-			"Player2x": Doc.Player2x,
-			"Player2y": Doc.Player2y,
-			"Player3x": Doc.Player3x,
-			"Player3y": Doc.Player3y,
-			"Player4x": Doc.Player4x,
-			"Player4y": Doc.Player4y
-	    })
-	}
-	if (DataType == 'SpawnedImgs')
-	{
-		db.collection('Game').doc('SpawnedImgs').update({
-	    	//"PlayerCount": Doc.PlayerCount
-	    })
-	}		
-}
-// As the first piece of data to be read will be PlayerData (to enter a game), and that the first time the function is called, there is a small delay:
-Read("PlayerData");
 
 // PERSONAL FUNCTIONS
 function CollideCheck(X1, X2, Y1, Y2, Length1, Length2) {
@@ -251,93 +213,42 @@ function Heal() {
 
 function Moving() {	
 	if (InGame == false | InHeal == true) return;
-	Read("PlayerData");
-	if (PlayerNum == 1)
-	{
-	    let x = Doc.Player1x;
-	    let y = Doc.Player1y;
-	}
-	if (PlayerNum == 2)
-	{
-	    let x = Doc.Player2x;
-	    let y = Doc.Player2y;
-	}
-	if (PlayerNum == 3)
-	{
-	    let x = Doc.Player3x;
-	    let y = Doc.Player3y;
-	}
-	if (PlayerNum == 4)
-	{
-	    let x = Doc.Player4x;
-	    let y = Doc.Player4y;
-	}
-	if (Keys[87] == true) y -= Speed;
-	if (Keys[83] == true) y += Speed;
-	if (Keys[65] == true) x -= Speed;
-	if (Keys[68] == true) x += Speed;
+	 
+	if (Keys[87] == true) PlayerPos[PlayerNum-1].Y -= Speed;
+	if (Keys[83] == true) PlayerPos[PlayerNum-1].Y += Speed;
+	if (Keys[65] == true) PlayerPos[PlayerNum-1].X -= Speed;
+	if (Keys[68] == true) PlayerPos[PlayerNum-1].X += Speed;
 	
 	for (let i = 0; i < SpawnedImgs.length; i++)
 	{
 		if (ScreenCheck(SpawnedImgs[i].X, SpawnedImgs[i].Y, "NoDraw", 0) == true & SpawnedImgs[i].Type == "Rock")
 		{
-			if (CollideCheck(PlayerPos[PlayerNum].X, SpawnedImgs[i].X, PlayerPos[PlayerNum].Y, SpawnedImgs[i].Y, 40, SpawnedImgs[i].HW) == true)
+			let x = PlayerPos[PlayerNum-1].X, y = PlayerPos[PlayerNum-1].Y;
+			if (CollideCheck(x, SpawnedImgs[i].X, y, SpawnedImgs[i].Y, 40, SpawnedImgs[i].HW) == true)
 			{
-				if (Keys[87] == true) 
+				if (Keys[87] == true & y+40 >= SpawnedImgs[i].Y) 
 				{
-					if (PlayerPos[PlayerNum].Y+40 >= SpawnedImgs[i].Y)
-					{
-						PlayerPos[PlayerNum].Y += Speed;
-					}
+					PlayerPos[PlayerNum-1].X += Speed;
 				}
-				if (Keys[83] == true)
+				if (Keys[83] == true & y <= SpawnedImgs[i].Y+SpawnedImgs[i].HW)
 				{
-					if (PlayerPos[PlayerNum].Y <= SpawnedImgs[i].Y+SpawnedImgs[i].HW)
-					{
-						PlayerPos[PlayerNum].Y -= Speed;
-					}
+					PlayerPos[PlayerNum-1].Y -= Speed;
 				}
-				if (Keys[65] == true)
+				if (Keys[65] == true & x+40 >= SpawnedImgs[i].X)
 				{
-					if (PlayerPos[PlayerNum].X+40 >= SpawnedImgs[i].X)
-					{
-						PlayerPos[PlayerNum].X += Speed;
-					}
+					PlayerPos[PlayerNum-1].X += Speed;
 				}
-				if (Keys[68] == true)
+				if (Keys[68] == true & x <= SpawnedImgs[i].X+SpawnedImgs[i].HW)
 				{
-					if (PlayerPos[PlayerNum].X <= SpawnedImgs[i].X+SpawnedImgs[i].HW)
-					{
-						PlayerPos[PlayerNum].X -= Speed;
-					}
+					PlayerPos[PlayerNum-1].X -= Speed;
 				}
 			}
 		}
 	}
-	if (PlayerPos[PlayerNum].X > 3000) x = 3000;
-	if (PlayerPos[PlayerNum].X < 0) x = 0;
-	if (PlayerPos[PlayerNum].Y > 3000) y = 3000;
-	if (PlayerPos[PlayerNum].Y < 0) y = 0;
-	if (PlayerNum == 1)
-	{
-	    Doc.Player1x = x;
-	    Doc.Player1y = y;
-	}
-	if (PlayerNum == 2)
-	{
-	    Doc.Player2x = x;
-	    Doc.Player2y = y;
-	}
-	if (PlayerNum == 3)
-	{
-	    Doc.Player3x = x;
-	    Doc.Player3y = y;
-	}
-	if (PlayerNum == 4)
-	{
-	    Doc.Player1x = x;
-	    Doc.Player1y = y;
-	}
+	if (PlayerPos[PlayerNum-1].X > 3000) PlayerPos[PlayerNum-1].X = 3000;
+	if (PlayerPos[PlayerNum-1].X < 0) PlayerPos[PlayerNum-1].X = 0;
+	if (PlayerPos[PlayerNum-1].Y > 3000) PlayerPos[PlayerNum-1].Y = 3000;
+	if (PlayerPos[PlayerNum-1].Y < 0) PlayerPos[PlayerNum-1].Y = 0;
 	Update("PlayerData");
 }
 
@@ -414,40 +325,33 @@ document.onkeypress = Usage;
 
 // MULTIPLAYER FUNCTIONS
 function MatchMake() {
-	let PlayerCount = Doc.PlayerCount;
-	
 	if (Name.value.length < 3) alert("Player name too short");
 	if (Name.value.length > 15) alert("Player name too long");
 	if (PlayerCount >= 4) alert("The game is full. Try again later");
 	if (Name.value.length < 3 | Name.value.length > 15 | PlayerCount >= 4) return;
 	Menu.classList.add("hide");
 	Load.classList.remove("hide");
-	PlayerID = `${Name.value}${PlayerCount+1}`;
-	
-	checking = setInterval(GameStart, 200); // Check if there are enough players every 0.2s
+	checking = setInterval(GameStart, 1000); // Check if there are enough players every 1s
 }
 EnterGame.onclick = MatchMake;
 
 function UpdateScreen() {
-	window.requestAnimationFrame(UpdateScreen);
-
+	if (Practice == false) Read();
 	if (HealTime > 0)
 	{
 	    HealInfo.textContent = `${Math.ceil(HealTime)}s`;
 		HealTime -= (1/60);
 	}
 	if (HealTime == 0) HealInfo.textContent = "";
-	Read("PlayerData");
-	if (PlayerNum == 1)
-	{
-		myX = Doc.Player1x;
-		myY = Doc.Player1y;
-	}
+
+	myX = PlayerPos[PlayerNum-1].X;
+	myY = PlayerPos[PlayerNum-1].Y;
+	 
 	let topx = TheZone.TopX - myX + World.width/2;
 	let topy = TheZone.TopY - myY + World.height/2;
 	let bottomx = TheZone.BottomX - myX + World.width/2;
 	let dist = bottomx-topx; // changing when player moves
-	
+
 	ctx.fillStyle = "blue";
 	ctx.fillRect(0, 0, World.width, World.height);
 	ctx.fillStyle = "lightgreen";
@@ -455,34 +359,14 @@ function UpdateScreen() {
 	
 	if (Practice == false)
 	{
-		Read("PlayerData");
-		for (let i = 1; i < 5; i++) // make Opponents appear (Be red)
+		for (let i = 1; i < PlayerPos.length+1; i++) // make Opponents appear (Be red)
 		{	
 			if (i == PlayerNum) continue;
-			if (i == 1)
-			{
-				let x = Doc.Player1x;
-				let y = Doc.Player1y;
-			}
-			if (i == 2)
-			{
-				let x = Doc.Player2x;
-				let y = Doc.Player2y;
-			}
-			if (i == 3)
-			{
-				let x = Doc.Player3x;
-				let y = Doc.Player3y;
-			}
-			if (i == 4)
-			{
-				let x = Doc.Player4x;
-				let y = Doc.Player4y;
-			}
-			ScreenCheck(x, y, Enemyimg, 40)
+			ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, Enemyimg, 40)
 		}
 	}
     ctx.drawImage(Playerimg, World.width/2, World.height/2, 40, 40);
+	
 	for (let i = 0; i < SpawnedImgs.length; i++) // Rocks, items etc
 	{
 		let x = SpawnedImgs[i].X;
@@ -491,12 +375,7 @@ function UpdateScreen() {
 		{
 			if (SpawnedImgs[i].Type == ImgNames[j]) // ImgNames and GameImgs Parallel
 			{
-				if (SpawnedImgs[i].Type != "Rock" & SpawnedImgs[i].Type != "Bush")
-				{
-					ScreenCheck(x, y, GameImgs[j], 30);
-					continue;
-				}
-				ScreenCheck(x, y, GameImgs[j], 90);
+		        ScreenCheck(x, y, GameImgs[j], SpawnedImgs[i].HW);
 			}
 		}
 	}
@@ -550,10 +429,10 @@ function UpdateScreen() {
 			continue;
 		}
 	}
-	Players.textContent = `${Doc.PlayerCount} players`;
+	Players.textContent = `${PlayerCount} players`;
 } 
 
-function ZoneSystem() { 
+function ZoneSystem() {	
 	TheZone.Time -= 1;
 	let CurrentZone = TheZone.CurrentZone;
 	let SizeChange;
@@ -575,9 +454,11 @@ function ZoneSystem() {
 	Minimap.fillStyle = "lightgreen";
 	Minimap.fillRect(left, left, ZoneSize, ZoneSize);
 	Minimap.fillStyle = "black";
-	Minimap.fillRect((PlayerPos[PlayerNum].X)/15, PlayerPos[PlayerNum].Y/15, 40/15, 40/15);
+	console.log(PlayerNum);
+	console.log(PlayerPos);
+	Minimap.fillRect((PlayerPos[PlayerNum-1].X)/15, PlayerPos[PlayerNum-1].Y/15, 40/15, 40/15);
 	
-	if (CollideCheck(PlayerPos[PlayerNum].X, TheZone.TopX, PlayerPos[PlayerNum].Y, TheZone.TopY, 40, TheZone.BottomX-TheZone.TopX) == false)
+	if (CollideCheck(PlayerPos[PlayerNum-1].X, TheZone.TopX, PlayerPos[PlayerNum-1].Y, TheZone.TopY, 40, TheZone.BottomX-TheZone.TopX) == false)
 	{
 	    HP -= Zones[CurrentZone-1].Dmg;
 		HPbar.value = HP;
@@ -601,6 +482,73 @@ function ZoneSystem() {
     }
 } 
 
+function Read() {
+	db.collection('Game').get().then((snapshot) => {
+		snapshot.docs.forEach(doc => {
+			if (doc.id == "PlayerData")
+			{
+				PlayerPos = [];
+				// This makes the firebase data in the same format as PlayerPos
+				PlayerPos.push({X: doc.data().Player1x, Y: doc.data().Player1y});
+				PlayerPos.push({X: doc.data().Player2x, Y: doc.data().Player2y});
+				PlayerPos.push({X: doc.data().Player3x, Y: doc.data().Player3y});
+				PlayerPos.push({X: doc.data().Player4x, Y: doc.data().Player4y});
+				PlayerCount = doc.data().PlayerCount;
+			}
+			if (doc.data.id == "SpawnedImgs")
+			{
+				// Same as PlayerData but has (Type, X, Y)
+				// Use a loop
+			}
+		})
+	})
+}
+
+function Update(DataType) {
+    if (DataType == 'PlayerData')
+	{
+		let A = PlayerCount;
+		if (PlayerNum == 1)
+		{
+			db.collection('Game').doc('PlayerData').update({
+			  "Player1x": PlayerPos[PlayerNum-1].X,
+			  "Player1y": PlayerPos[PlayerNum-1].Y,
+		      "PlayerCount": A,
+			})
+		}
+        if (PlayerNum == 2)
+		{
+			db.collection('Game').doc('PlayerData').update({
+			  "Player2x": PlayerPos[PlayerNum-1].X,
+			  "Player2y": PlayerPos[PlayerNum-1].Y,
+		      "PlayerCount": A,
+			})
+		}
+		if (PlayerNum == 3)
+		{
+			db.collection('Game').doc('PlayerData').update({
+			  "Player3x": PlayerPos[PlayerNum-1].X,
+			  "Player3y": PlayerPos[PlayerNum-1].Y,
+		      "PlayerCount": A,
+			})
+		}
+		if (PlayerNum == 4)
+		{
+			db.collection('Game').doc('PlayerData').update({
+			  "Player4x": PlayerPos[PlayerNum-1].X,
+			  "Player4y": PlayerPos[PlayerNum-1].Y,
+		      "PlayerCount": A,
+			})
+		}
+	}
+	if (DataType == 'SpawnedImgs')
+	{
+		db.collection('Game').doc('SpawnedImgs').update({
+	    	//Update x, y, type. use object array format.
+	    })
+	}		
+}
+
 
 // OTHER FUNCTIONS
 function ControlsScreen() {alert("Press 1/2/3/4 for changing in inventory. WASD for moving. Click when holding a gear and within the black circle, but outside the red circle (if visible) to fire")}
@@ -609,11 +557,14 @@ Controls.onclick = ControlsScreen;
 function GameEnded() { // Needs improving to work for when player leaves
 	if (Practice == false)
 	{
-		Read("PlayerCount");
-		Doc.PlayerCount--;
-		Update("PlayerData");
+		PlayerCount--;
 		Placements[PlayerCount] = PlayerID;
-		if (PlayerCount == 1 & InGame == true) alert("You won");
+		if (PlayerCount == 0 & InGame == true) 
+		{
+			PlayerPos = [{X: 50, Y: 50}, {X: 2950, Y: 50}, {X: 50, Y: 2950}, {X: 2950, Y: 2950}];
+			Update("PlayerData");
+			alert("You won");
+		}
 		else alert("You lost");
 		alert(`PLACEMENTS\n\n1st: ${Placements[0]}\n2nd: ${Placements[1]}\n3rd: ${Placements[2]}\n4th: ${Placements[3]}`);
 	}
@@ -623,16 +574,21 @@ function GameEnded() { // Needs improving to work for when player leaves
 }
 
 function RemovePlayer() {
-	Read("PlayerData");
-	Doc.PlayerCount = 0;
-	Update("PlayerData");
-	alert("Reload");
-	InGame == false;
-	PlayerPos[PlayerNum].X = 4000;
-	PlayerPos[PlayerNum].Y = 4000;
-	GameEnded();
+	if (Practice == false)
+	{
+		PlayerCount--;
+		
+		Placements[PlayerCount] = PlayerID;
+		
+		PlayerPos[PlayerNum-1].X = 2950;
+		if (PlayerNum == 1 | PlayerNum == 3) PlayerPos[PlayerNum-1].X = 50;
+		
+		PlayerPos[PlayerNum-1].Y = 2950;
+		if (PlayerNum < 3) PlayerPos[PlayerNum-1].Y = 50;
+		Update("PlayerData");
+	}
 }
-document.onbeforeunload = RemovePlayer; // clicking refresh won't lead to game resetting player 
+window.onbeforeunload = RemovePlayer; // won't run. and won't for refreshes
 
 function HowToPlay() {
 	alert("Begin a match to be paired against 4 opponents. Click on a nearby gear, item, or healer to pick it up. Click to fire in that direction to eliminate opponents. The starting size is 3000px");
@@ -676,3 +632,5 @@ function StartPractice() {
 		GameStart();
 }
 EnterPractice.onclick = StartPractice;
+
+Read();
