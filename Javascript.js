@@ -127,11 +127,13 @@ function GameStart() {
 	if (Practice == false) Read();
 	if (EnteredGame == false & Practice == false)
 	{
+		console.log(PlayerCount);
 		PlayerCount++;
 		PlayerID = `${Name.value}${PlayerCount}`;
 		PlayerNum = PlayerCount;
 		Update("PlayerData");
 		EnteredGame = true;
+		console.log(PlayerCount);
 	}
 	LoadPlayer.textContent = `Loading, ${PlayerCount}/4 Players`;
 	YourId.textContent = `ID: ${PlayerID}`;
@@ -154,6 +156,8 @@ function GameStart() {
 		drawing = setInterval(UpdateScreen, 28.5); // 35FPS (Saves on Firebase Reading, but still playable)
 	}
 }
+
+
 
 // PERSONAL FUNCTIONS
 function CollideCheck(X1, X2, Y1, Y2, Length1, Length2) {
@@ -326,7 +330,6 @@ document.onkeypress = Usage;
 
 // MULTIPLAYER FUNCTIONS
 function MatchMake() {
-	console.log(PlayerCount);
 	if (Name.value.length < 3) alert("Player name too short");
 	if (Name.value.length > 15) alert("Player name too long");
 	if (PlayerCount >= 4) alert("The game is full. Try again later");
