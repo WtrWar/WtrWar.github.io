@@ -123,16 +123,15 @@ function GameGeneration() {
 }
 
 function GameStart() {
+	PlayerPos = [{X: 50, Y: 50}, {X: 2950, Y: 50}, {X: 50, Y: 2950}, {X: 2950, Y: 2950}];
 	if (Practice == false) Read();
 	if (EnteredGame == false & Practice == false)
 	{
-		console.log("ORIGINAL: " + PlayerCount);
 		PlayerCount++;
 		PlayerID = `${Name.value}${PlayerCount}`;
 		PlayerNum = PlayerCount;
 		Update("PlayerData");
 		EnteredGame = true;
-		console.log("NEW: " + PlayerCount);
 	}
 	LoadPlayer.textContent = `Loading, ${PlayerCount}/4 Players`;
 	YourId.textContent = `ID: ${PlayerID}`;
@@ -261,7 +260,7 @@ function PickUp() {
 		{
 			if (ScreenCheck(SpawnedImgs[i].X, SpawnedImgs[i].Y, "NoDraw", 0))
 			{
-				if (CollideCheck(PlayerPos[PlayerNum].X, SpawnedImgs[i].X, PlayerPos[PlayerNum].Y, SpawnedImgs[i].Y, 40, 30) == true)
+				if (CollideCheck(PlayerPos[PlayerNum-1].X, SpawnedImgs[i].X, PlayerPos[PlayerNum-1].Y, SpawnedImgs[i].Y, 40, 30) == true)
 				{
 					for (let j = 0; j < Inventory.length; j++)
 					{
@@ -327,6 +326,7 @@ document.onkeypress = Usage;
 
 // MULTIPLAYER FUNCTIONS
 function MatchMake() {
+	console.log(PlayerCount);
 	if (Name.value.length < 3) alert("Player name too short");
 	if (Name.value.length > 15) alert("Player name too long");
 	if (PlayerCount >= 4) alert("The game is full. Try again later");
@@ -342,9 +342,9 @@ function UpdateScreen() {
 	if (HealTime > 0)
 	{
 	    HealInfo.textContent = `${Math.ceil(HealTime)}s`;
-		HealTime -= (1/60);
+		HealTime -= (1/35);
 	}
-	if (HealTime == 0) HealInfo.textContent = "";
+	if (HealTime <= 0) HealInfo.textContent = "";
 
 	myX = PlayerPos[PlayerNum-1].X;
 	myY = PlayerPos[PlayerNum-1].Y;
@@ -404,7 +404,7 @@ function UpdateScreen() {
 		FiredWater[i].Y = FiredWater[i].Y + FiredWater[i].Ygrad;
 		if (FiredWater[i].Num != PlayerNum)
 		{
-			if (CollideCheck(PlayerPos[PlayerNum].X, FiredWater[i].X, PlayerPos[i].Y, FiredWater[i].Y, 40, 30) == true)
+			if (CollideCheck(PlayerPos[PlayerNum].X, FiredWater[i].X, PlayerPos[PlayerNum].Y, FiredWater[i].Y, 40, 30) == true)
 			{
 				Shield -= FiredWater[i].Dmg;
 				if (Shield < 0)
