@@ -60,7 +60,7 @@ var Placements = ["???", "???", "???", "???"];
 var SpawnedImgs = [];
 var FiredWater = []; // All water projectile locations, dmg, direction, target spot
 var PlayerPos = [{X: 50, Y: 50}, {X: 2950, Y: 50}, {X: 50, Y: 2950}, {X: 2950, Y: 2950}];
-var EnteredGame = false, PlayerCount=1;
+var EnteredGame = false, PlayerCount=-1;
 
 var WorldMap = document.getElementById("WorldMap");
 var Minimap = WorldMap.getContext("2d");
@@ -126,11 +126,13 @@ function GameStart() {
 	if (Practice == false) Read();
 	if (EnteredGame == false & Practice == false)
 	{
+		console.log("ORIGINAL: " + PlayerCount);
 		PlayerCount++;
 		PlayerID = `${Name.value}${PlayerCount}`;
 		PlayerNum = PlayerCount;
 		Update("PlayerData");
 		EnteredGame = true;
+		console.log("NEW: " + PlayerCount);
 	}
 	LoadPlayer.textContent = `Loading, ${PlayerCount}/4 Players`;
 	YourId.textContent = `ID: ${PlayerID}`;
@@ -454,8 +456,6 @@ function ZoneSystem() {
 	Minimap.fillStyle = "lightgreen";
 	Minimap.fillRect(left, left, ZoneSize, ZoneSize);
 	Minimap.fillStyle = "black";
-	console.log(PlayerNum);
-	console.log(PlayerPos);
 	Minimap.fillRect((PlayerPos[PlayerNum-1].X)/15, PlayerPos[PlayerNum-1].Y/15, 40/15, 40/15);
 	
 	if (CollideCheck(PlayerPos[PlayerNum-1].X, TheZone.TopX, PlayerPos[PlayerNum-1].Y, TheZone.TopY, 40, TheZone.BottomX-TheZone.TopX) == false)
@@ -485,20 +485,19 @@ function ZoneSystem() {
 function Read() {
 	db.collection('Game').get().then((snapshot) => {
 		snapshot.docs.forEach(doc => {
-			if (doc.id == "PlayerData")
+            if (doc.id == "GameData")
 			{
 				PlayerPos = [];
-				// This makes the firebase data in the same format as PlayerPos
-				PlayerPos.push({X: doc.data().Player1x, Y: doc.data().Player1y});
-				PlayerPos.push({X: doc.data().Player2x, Y: doc.data().Player2y});
-				PlayerPos.push({X: doc.data().Player3x, Y: doc.data().Player3y});
-				PlayerPos.push({X: doc.data().Player4x, Y: doc.data().Player4y});
+				let Objects = (doc.data().PlayerData).split('/');
+				// Each obj in Objects is a player data in csv form
+				for (let i = 0; i < 4; i++)
+				{
+					let Obj = Objects[i].split(',');
+					let x = parseInt(Obj[0]);
+					let y = parseInt(Obj[1]);
+					PlayerPos.push({X: x, Y: y})
+				}
 				PlayerCount = doc.data().PlayerCount;
-			}
-			if (doc.data.id == "SpawnedImgs")
-			{
-				// Same as PlayerData but has (Type, X, Y)
-				// Use a loop
 			}
 		})
 	})
@@ -507,43 +506,22 @@ function Read() {
 function Update(DataType) {
     if (DataType == 'PlayerData')
 	{
-		let A = PlayerCount;
-		if (PlayerNum == 1)
+		let CsvString = "";
+		for (let i = 0; i < 4; i++) // Return to csv layout
 		{
-			db.collection('Game').doc('PlayerData').update({
-			  "Player1x": PlayerPos[PlayerNum-1].X,
-			  "Player1y": PlayerPos[PlayerNum-1].Y,
-		      "PlayerCount": A,
-			})
+			let x = PlayerPos[i].X;
+			let y = PlayerPos[i].Y;
+			if (i < 3) CsvString = CsvString+`${x},${y}/`;
+			if (i == 3) CsvString = CsvString+`${x},${y}`;
 		}
-        if (PlayerNum == 2)
-		{
-			db.collection('Game').doc('PlayerData').update({
-			  "Player2x": PlayerPos[PlayerNum-1].X,
-			  "Player2y": PlayerPos[PlayerNum-1].Y,
-		      "PlayerCount": A,
-			})
-		}
-		if (PlayerNum == 3)
-		{
-			db.collection('Game').doc('PlayerData').update({
-			  "Player3x": PlayerPos[PlayerNum-1].X,
-			  "Player3y": PlayerPos[PlayerNum-1].Y,
-		      "PlayerCount": A,
-			})
-		}
-		if (PlayerNum == 4)
-		{
-			db.collection('Game').doc('PlayerData').update({
-			  "Player4x": PlayerPos[PlayerNum-1].X,
-			  "Player4y": PlayerPos[PlayerNum-1].Y,
-		      "PlayerCount": A,
-			})
-		}
+		db.collection('Game').doc('GameData').update({
+			"PlayerData": CsvString,
+			"PlayerCount": PlayerCount,
+		})
 	}
 	if (DataType == 'SpawnedImgs')
 	{
-		db.collection('Game').doc('SpawnedImgs').update({
+		db.collection('Game').doc('GameData').update({
 	    	//Update x, y, type. use object array format.
 	    })
 	}		
@@ -576,7 +554,7 @@ function GameEnded() { // Needs improving to work for when player leaves
 function RemovePlayer() {
 	if (Practice == false)
 	{
-		PlayerCount--;
+		PlayerCount--; // Using with >1 dreamweaver test in google causes matchmake issue
 		
 		Placements[PlayerCount] = PlayerID;
 		
