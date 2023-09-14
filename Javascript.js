@@ -370,13 +370,13 @@ function UpdateScreen() {
 	{
 		for (let i = 0; i < PlayerPos.length; i++) // make Opponents appear (Be red)
 		{	
-			if (PlayerPos[i].In == "false") ScreenCheck(PlayerPos[i].X, PlayerPos[i].Y, Eliminateimg, 40);
 			if (i == PlayerNum) continue;
+			if (PlayerPos[i].In == "false") ScreenCheck(PlayerPos[i].X, PlayerPos[i].Y, Eliminateimg, 40);
 			if (PlayerPos[i].In == "true") ScreenCheck(PlayerPos[i].X, PlayerPos[i].Y, Enemyimg, 40)
 		}
 	}
 	console.log(PlayerPos[PlayerNum-1].In);
-	if (PlayerPos[PlayerNum-1].In == "false") ScreenCheck(PlayerPos[PlayerNum-1].X, PlayerPos[PlayerNum-1].Y, Eliminateimg, 40);
+	if (PlayerPos[PlayerNum-1].In == "false") ctx.drawImage(Eliminateimg, World.width/2, World.height/2, 40, 40);
     if (PlayerPos[PlayerNum-1].In == "true") ctx.drawImage(Playerimg, World.width/2, World.height/2, 40, 40);
 	
 	for (let i = 0; i < SpawnedImgs.length; i++) // Rocks, items etc
