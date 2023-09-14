@@ -1,4 +1,5 @@
 // Multiplayer:
+// If a player leaves in MatchMake, such as player 2, then player 3 ID becomes 2 and Player4 ID becomes 3. Otherwise there could be 2 player 3s
 
 // Suggestions:
 // Cancelling healing
@@ -23,7 +24,7 @@ const db = firebase.firestore();
 
 // PERSONAL VARIABLES
 var Zones = [
-	{Length: 15, Sizing: 2600, Dmg: 5}, 
+	{Length: 15, Sizing: 2600, Dmg: 50}, 
 	{Length: 25, Sizing: 1800, Dmg: 8}, 									
 	{Length: 35, Sizing: 1600, Dmg: 12},
 	{Length: 35, Sizing: 1200, Dmg: 15},
@@ -52,24 +53,6 @@ var InGame = false, InHeal = false, HeldImg='', Practice = false, CurrentSlot = 
 var myX, myY, FireTime=0, HealTime=0;
 var TheZone = {TopX: 0, TopY: 0, BottomX: 3000, BottomY: 3000, Time: Zones[0].Length, Shrink: 3000-Zones[0].Sizing, CurrentZone: 1}; // Same for everyone, so doesn't need to be in firebase
 
-
-// MULTIPLAYER VARIABLES
-
-// These will become Personal
-var Placements = ["???", "???", "???", "???"];
-var SpawnedImgs = [];
-var FiredWater = []; // All water projectile locations, dmg, direction, target spot
-var PlayerPos = [{X: 50, Y: 50}, {X: 2950, Y: 50}, {X: 50, Y: 2950}, {X: 2950, Y: 2950}];
-var EnteredGame = false, PlayerCount=-1;
-
-var WorldMap = document.getElementById("WorldMap");
-var Minimap = WorldMap.getContext("2d");
-Minimap.fillStyle = "lightgreen";
-Minimap.fillRect(0, 0, WorldMap.width, WorldMap.height);
-var ctx = World.getContext("2d");
-
-
-// https://WtrWar.github.io/ImgName.png
 var GameImgs = [];
 var ImgNames = [];
 for (let i = 0; i < GearList.length; i++) ImgNames.push(GearList[i].Type);
@@ -83,6 +66,21 @@ var Enemyimg = new Image();
 Enemyimg.src = "https://WtrWar.github.io/Red.png";
 var Waterimg = new Image();
 Waterimg.src = "https://WtrWar.github.io/Water.png";
+var Eliminateimg = new Image();
+Eliminateimg.src = "https://WtrWar.github.io/Eliminated.png";
+
+
+// MULTIPLAYER/WORLD VARIABLES
+var SpawnedImgs = [];
+var FiredWater = []; // All water projectile locations, dmg, direction, target spot
+var PlayerPos = [{X: 50, Y: 50, In: "true"}, {X: 2950, Y: 50, In: "true"}, {X: 50, Y: 2950, In: "true"}, {X: 2950, Y: 2950, In: "true"}];
+var EnteredGame = false, PlayerCount=1;
+
+
+var Minimap = WorldMap.getContext("2d");
+Minimap.fillStyle = "lightgreen";
+Minimap.fillRect(0, 0, WorldMap.width, WorldMap.height);
+var ctx = World.getContext("2d");
 
 
 // GAME LOAD FUNCTIONS
@@ -123,17 +121,15 @@ function GameGeneration() {
 }
 
 function GameStart() {
-	PlayerPos = [{X: 50, Y: 50}, {X: 2950, Y: 50}, {X: 50, Y: 2950}, {X: 2950, Y: 2950}];
+	PlayerPos = [{X: 50, Y: 50, In: "true"}, {X: 2950, Y: 50, In: "true"}, {X: 50, Y: 2950, In: "true"}, {X: 2950, Y: 2950, In: "true"}];
 	if (Practice == false) Read();
 	if (EnteredGame == false & Practice == false)
 	{
-		console.log(PlayerCount);
 		PlayerCount++;
 		PlayerID = `${Name.value}${PlayerCount}`;
 		PlayerNum = PlayerCount;
 		Update("PlayerData");
 		EnteredGame = true;
-		console.log(PlayerCount);
 	}
 	LoadPlayer.textContent = `Loading, ${PlayerCount}/4 Players`;
 	YourId.textContent = `ID: ${PlayerID}`;
@@ -147,7 +143,14 @@ function GameStart() {
 			GameImgs.push(TempImg);
 		}
 		clearInterval(checking);
-		if (PlayerID.at(-1) == '4' | Practice == true) GameGeneration();
+		if (PlayerID.at(-1) == '4' | Practice == true) 
+		{
+		    GameGeneration();
+			if (PlayerID.at(-1) == PlayerCount & Practice == false) // adapts if a player leaves
+			{
+				Update("SpawnedImgs");
+			}
+		}
 		InGame = true;
 		Load.classList.add("hide");
 		Game.classList.remove("hide");
@@ -156,7 +159,6 @@ function GameStart() {
 		drawing = setInterval(UpdateScreen, 28.5); // 35FPS (Saves on Firebase Reading, but still playable)
 	}
 }
-
 
 
 // PERSONAL FUNCTIONS
@@ -197,8 +199,9 @@ function Fire() {
 			let Ygradient = Ydist/Divisor;
 
 			var WaterInfo = 
-				{Dmg: GearList[i].Dmg, X: PlayerPos[PlayerNum].X, Y: PlayerPos[PlayerNum].Y, TargetX: PlayerPos[PlayerNum].X+Xdist, TargetY: PlayerPos[PlayerNum].Y+Ydist, Xgrad: Xgradient, Ygrad: Ygradient, Num: PlayerNum};
+				{Dmg: GearList[i].Dmg, X: PlayerPos[PlayerNum-1].X, Y: PlayerPos[PlayerNum-1].Y, TargetX: PlayerPos[PlayerNum-1].X+Xdist, TargetY: PlayerPos[PlayerNum-1].Y+Ydist, Xgrad: Xgradient, Ygrad: Ygradient, Num: PlayerNum};
 			
+			// Num in WaterInfo is used to make sure player doesn't get damaged by their water, and allows spectating eliminator
 			FiredWater.push(WaterInfo);
 		}
 	}	
@@ -254,7 +257,7 @@ function Moving() {
 	if (PlayerPos[PlayerNum-1].X < 0) PlayerPos[PlayerNum-1].X = 0;
 	if (PlayerPos[PlayerNum-1].Y > 3000) PlayerPos[PlayerNum-1].Y = 3000;
 	if (PlayerPos[PlayerNum-1].Y < 0) PlayerPos[PlayerNum-1].Y = 0;
-	Update("PlayerData");
+	if (Practice == false) Update("PlayerData");
 }
 
 function PickUp() {
@@ -275,6 +278,7 @@ function PickUp() {
 							let type = SpawnedImgs[i].Type;
 							HeldImg.src = `https://WtrWar.github.io/${type}.png`;
 							SpawnedImgs.splice(i, 1);
+							if (Practice == false) Update("SpawnedImgs"); // remove img from game
 							return;
 						}
 					}
@@ -341,7 +345,7 @@ function MatchMake() {
 EnterGame.onclick = MatchMake;
 
 function UpdateScreen() {
-	if (Practice == false) Read();
+	if (Practice == false & InGame == true) Read();
 	if (HealTime > 0)
 	{
 	    HealInfo.textContent = `${Math.ceil(HealTime)}s`;
@@ -364,13 +368,16 @@ function UpdateScreen() {
 	
 	if (Practice == false)
 	{
-		for (let i = 1; i < PlayerPos.length+1; i++) // make Opponents appear (Be red)
+		for (let i = 0; i < PlayerPos.length; i++) // make Opponents appear (Be red)
 		{	
+			if (PlayerPos[i].In == "false") ScreenCheck(PlayerPos[i].X, PlayerPos[i].Y, Eliminateimg, 40);
 			if (i == PlayerNum) continue;
-			ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, Enemyimg, 40)
+			if (PlayerPos[i].In == "true") ScreenCheck(PlayerPos[i].X, PlayerPos[i].Y, Enemyimg, 40)
 		}
 	}
-    ctx.drawImage(Playerimg, World.width/2, World.height/2, 40, 40);
+	console.log(PlayerPos[PlayerNum-1].In);
+	if (PlayerPos[PlayerNum-1].In == "false") ScreenCheck(PlayerPos[PlayerNum-1].X, PlayerPos[PlayerNum-1].Y, Eliminateimg, 40);
+    if (PlayerPos[PlayerNum-1].In == "true") ctx.drawImage(Playerimg, World.width/2, World.height/2, 40, 40);
 	
 	for (let i = 0; i < SpawnedImgs.length; i++) // Rocks, items etc
 	{
@@ -403,11 +410,14 @@ function UpdateScreen() {
 	for (let i = 0; i < FiredWater.length; i++) // Make fired waters appear
 	{
 		ScreenCheck(FiredWater[i].X, FiredWater[i].Y, Waterimg, 30);
-		FiredWater[i].X = FiredWater[i].X + FiredWater[i].Xgrad;
-		FiredWater[i].Y = FiredWater[i].Y + FiredWater[i].Ygrad;
+		if (PlayerNum == PlayerCount)
+		{
+			FiredWater[i].X = FiredWater[i].X + FiredWater[i].Xgrad;
+		    FiredWater[i].Y = FiredWater[i].Y + FiredWater[i].Ygrad;
+		}
 		if (FiredWater[i].Num != PlayerNum)
 		{
-			if (CollideCheck(PlayerPos[PlayerNum].X, FiredWater[i].X, PlayerPos[PlayerNum].Y, FiredWater[i].Y, 40, 30) == true)
+			if (CollideCheck(PlayerPos[PlayerNum].X, FiredWater[i].X, PlayerPos[PlayerNum].Y, FiredWater[i].Y, 40, 30) == true & InGame == true)
 			{
 				Shield -= FiredWater[i].Dmg;
 				if (Shield < 0)
@@ -415,7 +425,12 @@ function UpdateScreen() {
 					HP -= (Shield*-1);
 					Shield = 0;
 				}
-				if (HP <= 0) GameEnded();
+				if (HP <= 0) 
+				{
+					let Eliminator = FiredWater[i].Num;
+					PlayerNum = FiredWater[i].Num;
+					GameEnded();
+				}
 			}
 		}
 		for (let j = 0; j < SpawnedImgs.length; j++)
@@ -431,10 +446,10 @@ function UpdateScreen() {
 		if (CollideCheck(FiredWater[i].X, FiredWater[i].TargetX, FiredWater[i].Y, FiredWater[i].TargetY, 5, 5) == true)
 		{
 			FiredWater.splice(i, 1);
-			continue;
 		}
 	}
 	Players.textContent = `${PlayerCount} players`;
+	if (PlayerNum == PlayerCount) Update("FiredWater");
 } 
 
 function ZoneSystem() {	
@@ -465,7 +480,7 @@ function ZoneSystem() {
 	{
 	    HP -= Zones[CurrentZone-1].Dmg;
 		HPbar.value = HP;
-		if (HP <= 0) GameEnded();
+		if (HP <= 0 & InGame == true) GameEnded();
 	}
 	if (TheZone.Time == 0)
 	{
@@ -488,46 +503,81 @@ function ZoneSystem() {
 function Read() {
 	db.collection('Game').get().then((snapshot) => {
 		snapshot.docs.forEach(doc => {
-            if (doc.id == "GameData")
+			if (PlayerCount > doc.data().PlayerCount & InGame == false & PlayerNum > PlayerCount) // Player left matchmaking, and: Eg Player1 left so Player3 now Player2. Player2 now Player1.
 			{
-				PlayerPos = [];
-				let Objects = (doc.data().PlayerData).split('/');
-				// Each obj in Objects is a player data in csv form
-				for (let i = 0; i < 4; i++)
-				{
-					let Obj = Objects[i].split(',');
-					let x = parseInt(Obj[0]);
-					let y = parseInt(Obj[1]);
-					PlayerPos.push({X: x, Y: y})
-				}
-				PlayerCount = doc.data().PlayerCount;
+				PlayerNum--;
+				PlayerID = `${Name.value}${PlayerNum}`;
+			}
+			PlayerCount = doc.data().PlayerCount;
+			
+			PlayerPos = [];
+			let Objects = (doc.data().PlayerData).split('/');
+			// Each obj in Objects is a player data in csv form
+			for (let i = 0; i < Objects.length; i++)
+			{
+				let Obj = Objects[i].split(',');
+				PlayerPos.push({X: parseInt(Obj[0]), Y: parseInt(Obj[1]), In: Obj[2]});
+			}		
+			
+			SpawnedImgs = [];
+			Objects = (doc.data().SpawnedImgs).split('/');
+			// Each obj is a spawned image Type, X, Y, HW(The height and width)
+			for (let i = 0; i < 80; i++)
+			{
+				let Obj = Objects[i].split(',');
+				SpawnedImgs.push({Type: Obj[0], X: parseInt(Obj[1]), Y: parseInt(Obj[2]), HW: parseInt(Obj[3])});
+			}
+			//console.log("Read: " + SpawnedImgs.length); // Not 80 usually
+			
+			if (doc.data().FiredWater == "") return;
+			Objects = (doc.data().FiredWater).split(',');
+			for (let i = 0; i < Objects.length; i++)
+			{
+				let Obj = Objects[i].Split(',');
+				var WaterInfo = 
+				{Dmg: Obj[0], X: Obj[1], Y: Obj[2], TargetX: Obj[3], TargetY: Obj[4], Xgrad: Obj[5], Ygrad: Obj[6], Num: Obj[7]};
 			}
 		})
 	})
 }
 
 function Update(DataType) {
+	
+	let CsvString = "";
     if (DataType == 'PlayerData')
 	{
-		let CsvString = "";
 		for (let i = 0; i < 4; i++) // Return to csv layout
 		{
-			let x = PlayerPos[i].X;
-			let y = PlayerPos[i].Y;
-			if (i < 3) CsvString = CsvString+`${x},${y}/`;
-			if (i == 3) CsvString = CsvString+`${x},${y}`;
+			CsvString = CsvString+`${PlayerPos[i].X},${PlayerPos[i].Y},${PlayerPos[i].In}/`;
 		}
+		CsvString.slice(0, CsvString.length-1);
 		db.collection('Game').doc('GameData').update({
 			"PlayerData": CsvString,
 			"PlayerCount": PlayerCount,
 		})
 	}
 	if (DataType == 'SpawnedImgs')
-	{
+    {
+		for (let i = 0; i < SpawnedImgs.length-1; i++)
+		{
+			CsvString = CsvString +`${SpawnedImgs[i].Type},${SpawnedImgs[i].X},${SpawnedImgs[i].Y},${SpawnedImgs[i].HW}/`;
+		}
+		CsvString = CsvString.slice(0, CsvString.length-1);
 		db.collection('Game').doc('GameData').update({
-	    	//Update x, y, type. use object array format.
+	    	"SpawnedImgs": CsvString,
 	    })
 	}		
+	if (DataType == "FiredWater")
+	{
+		for (let i = 0; i < FiredWater.length; i++)
+		{
+			CsvString = CsvString+`${FiredWater[i].Dmg},${FiredWater[i].X},${FiredWater[i].Y},${FiredWater[i].TargetX},${FiredWater[i].TargetY},${FiredWater[i].Xgrad},${FiredWater[i].Ygrad},${FiredWater[i].Num}/`;
+		}
+		CsvString = CsvString.slice(0, CsvString.length-1);
+		db.collection('Game').doc('GameData').update({
+			"FiredWater": CsvString,
+		})
+	}
 }
 
 
@@ -536,40 +586,41 @@ function ControlsScreen() {alert("Press 1/2/3/4 for changing in inventory. WASD 
 Controls.onclick = ControlsScreen;
 
 function GameEnded() { // Needs improving to work for when player leaves
-	if (Practice == false)
+	if (Practice == false | InGame == true) // Make & instead of |
 	{
+		if (PlayerCount == 1) Placement.textContent = "You placed: 1st";
+		if (PlayerCount == 2) Placement.textContent = "You placed: 2nd";
+		if (PlayerCount == 3) Placement.textContent = "You placed: 3rd";
+		if (PlayerCount == 4) Placement.textContent = "You placed: 4th";
+	    Info.classList.add("hide");
+		PlayerPos[PlayerNum-1].In = false;
+		InGame = false;
 		PlayerCount--;
-		Placements[PlayerCount] = PlayerID;
 		if (PlayerCount == 0 & InGame == true) 
 		{
-			PlayerPos = [{X: 50, Y: 50}, {X: 2950, Y: 50}, {X: 50, Y: 2950}, {X: 2950, Y: 2950}];
-			Update("PlayerData");
-			alert("You won");
+			PlayerPos = [{X: 50, Y: 50, In: "true"}, {X: 2950, Y: 50, In: "true"}, {X: 50, Y: 2950, In: "true"}, {X: 2950, Y: 2950, In: "true"}];
+			FiredWater = [{Dmg: 0, X: -1000, Y: -1000, TargetX: 0, TargetY: 0, Xgrad: 0, Ygrad: 0, Num: 0}];
+			Update("FiredWater");
+			SpawnedImgs = [{Type: "Smoke", X: -1000, Y: -1000, HW: 0}];
+			Update("SpawnedImgs");
 		}
-		else alert("You lost");
-		alert(`PLACEMENTS\n\n1st: ${Placements[0]}\n2nd: ${Placements[1]}\n3rd: ${Placements[2]}\n4th: ${Placements[3]}`);
+		Update("PlayerData");
 	}
-	if (Practice == true) alert("You were eliminated");
-	clearInterval(zonerun);
-	location.reload();
+	if (Practice == true) 
+	{
+		alert("You were eliminated");
+		location.reload();
+	}
 }
 
 function RemovePlayer() {
-	if (Practice == false)
+	if (Practice == false & InGame == true)
 	{
 		PlayerCount--; // Using with >1 dreamweaver test in google causes matchmake issue
-		
-		Placements[PlayerCount] = PlayerID;
-		
-		PlayerPos[PlayerNum-1].X = 2950;
-		if (PlayerNum == 1 | PlayerNum == 3) PlayerPos[PlayerNum-1].X = 50;
-		
-		PlayerPos[PlayerNum-1].Y = 2950;
-		if (PlayerNum < 3) PlayerPos[PlayerNum-1].Y = 50;
 		Update("PlayerData");
 	}
 }
-window.onbeforeunload = RemovePlayer; // won't run. and won't for refreshes
+window.onbeforeunload = RemovePlayer;
 
 function HowToPlay() {
 	alert("Begin a match to be paired against 4 opponents. Click on a nearby gear, item, or healer to pick it up. Click to fire in that direction to eliminate opponents. The starting size is 3000px");

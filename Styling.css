@@ -5,6 +5,14 @@
 	overflow: hidden;
 	background-color: lightcyan;
 }
+#EndScreen {
+	position: fixed;
+	top: 5px;
+	left: 1075px;
+	width: 150px;
+	height: auto;
+	text-align: center;
+}
 #EnterGame {
 	height: 40px;
 	width: 80px;

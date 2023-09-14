@@ -5,7 +5,7 @@
 	<link rel="stylesheet" href="Styling.css">
 	<title>game</title>
 </head>
-<body id="Page" oncontextmenu="return false;">
+<body id="Page">
 	<div id="Menu">
 	  <h1 class="maintitle">game</h1><br>
 	  <input id="Name" type="text" value="EnterName" autocomplete="off"/><br><br><br><br>
@@ -30,8 +30,8 @@
 	<div id="Info" class="hide">
 	  <div id="GameInfo">
 		  <h3 id="ZoneDisplay">Closing zone: 1</h3>
-		  <h3 id="TimeLeft">Closing time left: 50s</h3>
-		  <h3 id="Players">4 players</h3>
+		  <h3 id="TimeLeft"></h3>
+		  <h3 id="Players"></h3>
 	  </div>
 		
 	  <div id="GameHP">
@@ -46,16 +46,21 @@
 		<img id="Held4" src="GearSquare.png" alt="Tile4" class="Held" onclick="EmptyInventory()">
 		<h3 id="HealInfo"></h3>
 	  </div> 
+		
 	  <canvas id="WorldMap" width="200px" height="200px"></canvas>
 		
 	</div>
 
+	<div id="EndScreen">
+	  <h2 id="Placement"></h2>
+	</div>
+	
+	
 	<script src="https://www.gstatic.com/firebasejs/8.2.0/firebase-app.js"></script>
 	<script src="https://www.gstatic.com/firebasejs/8.1.2/firebase-firestore.js"></script>
 	<script type="module">
 	    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js';
 		import { getAuth } from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js';
-	    //import { getFirestore, doc, getDoc, collection } from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js';
 	</script>
 	
 <script src="Javascript.js"></script>	
