@@ -1,5 +1,7 @@
 // Multiplayer:
 // If a player leaves in MatchMake, such as player 2, then player 3 ID becomes 2 and Player4 ID becomes 3. Otherwise there could be 2 player 3s
+// Sometimes can't see others. can't see fired water. 
+// Leaving a game reducing playercount needs checking (May be just because of 2 dreamweaver ran tabs)
 
 // Suggestions:
 // Cancelling healing
@@ -48,9 +50,11 @@ var GearList = [
 	{Type: "WaterBalloon", FireDelay: 1.3, Range: 500, MinRange: 250, Dmg: 95},
 ]
 var Keys = [];
+var KeyBinds = ["w", "a", "r", "s", "f", "1", "2", "3", "4"];
+var ChangingKeys = ["Move Up", "Move Left", "Move Right", "Move Down", "Pick Up", "Use Slot 1", "Use Slot 2", "Use Slot 3", "Use Slot 4"];
 var checking, zonerun, drawing, PlayerID, Speed = 5, HP = 100, Shield = 0, ElementNum, PlayerNum=1;
 var InGame = false, InHeal = false, HeldImg='', Practice = false, CurrentSlot = -1;
-var myX, myY, FireTime=0, HealTime=0;
+var myX, myY, FireTime=0, HealTime=0, KeySequence="";
 var TheZone = {TopX: 0, TopY: 0, BottomX: 3000, BottomY: 3000, Time: Zones[0].Length, Shrink: 3000-Zones[0].Sizing, CurrentZone: 1}; // Same for everyone, so doesn't need to be in firebase
 
 var GameImgs = [];
@@ -189,12 +193,12 @@ function Fire() {
 		    let Xdist = event.clientX - 8 - World.width/2;
 			let Ydist = event.clientY - 8 - World.height/2;
 
+			// 8 is taken away as (8, 8) is the (0, 0) position in World
 			let Dist = Math.sqrt((Xdist*Xdist) + (Ydist*Ydist));// Dist formula
 			if (Dist < GearList[i].MinRange | Dist > GearList[i].Range) return;
-			// To standardize speed (by making water travel 10px per run), Dist/A = 10
-			// Dist = 10A, Dist/10 = A
+			// To standardize speed (by making water travel 10px per run), Dist/A = 10, Dist = 10A, Dist/10 = A
 			// Then divide the Xgradient and Ygradient by A, to standardize dist per frame
-			let Divisor = Dist/8; // Changing 4 will change the standard speed (lowering slows speed)
+			let Divisor = Dist/8; // Changing 8 will change the standard speed (lowering reduces speed)
 			let Xgradient = Xdist/Divisor;
 			let Ygradient = Ydist/Divisor;
 
@@ -220,6 +224,8 @@ function Heal() {
 }
 
 function Moving() {	
+	// will need to find the keycode of the keybinds
+	
 	if (InGame == false | InHeal == true) return;
 	 
 	if (Keys[87] == true) PlayerPos[PlayerNum-1].Y -= Speed;
@@ -289,7 +295,7 @@ function PickUp() {
 }
 
 function Usage() {
-	if (event.key == "o")
+	if (event.key == "f")
 	{
 		PickUp();
 		return;
@@ -334,6 +340,7 @@ document.onkeypress = Usage;
 
 // MULTIPLAYER FUNCTIONS
 function MatchMake() {
+	Read(); // Not happening???
 	if (Name.value.length < 3) alert("Player name too short");
 	if (Name.value.length > 15) alert("Player name too long");
 	if (PlayerCount >= 4) alert("The game is full. Try again later");
@@ -346,6 +353,8 @@ EnterGame.onclick = MatchMake;
 
 function UpdateScreen() {
 	if (Practice == false & InGame == true) Read();
+	console.log(FiredWater.length);
+	
 	if (HealTime > 0)
 	{
 	    HealInfo.textContent = `${Math.ceil(HealTime)}s`;
@@ -368,14 +377,13 @@ function UpdateScreen() {
 	
 	if (Practice == false)
 	{
-		for (let i = 0; i < PlayerPos.length; i++) // make Opponents appear (Be red)
+		for (let i = 1; i < PlayerPos.length+1; i++) // make Opponents appear (Be red)
 		{	
 			if (i == PlayerNum) continue;
-			if (PlayerPos[i].In == "false") ScreenCheck(PlayerPos[i].X, PlayerPos[i].Y, Eliminateimg, 40);
-			if (PlayerPos[i].In == "true") ScreenCheck(PlayerPos[i].X, PlayerPos[i].Y, Enemyimg, 40)
+			if (PlayerPos[i-1].In == "false") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, Eliminateimg, 40);
+			if (PlayerPos[i-1].In == "true") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, Enemyimg, 40)
 		}
 	}
-	console.log(PlayerPos[PlayerNum-1].In);
 	if (PlayerPos[PlayerNum-1].In == "false") ctx.drawImage(Eliminateimg, World.width/2, World.height/2, 40, 40);
     if (PlayerPos[PlayerNum-1].In == "true") ctx.drawImage(Playerimg, World.width/2, World.height/2, 40, 40);
 	
@@ -387,10 +395,11 @@ function UpdateScreen() {
 		{
 			if (SpawnedImgs[i].Type == ImgNames[j]) // ImgNames and GameImgs Parallel
 			{
-		        ScreenCheck(x, y, GameImgs[j], SpawnedImgs[i].HW);
+		        ScreenCheck(SpawnedImgs[i].X, SpawnedImgs[i].Y, GameImgs[j], SpawnedImgs[i].HW);
 			}
 		}
 	}
+	
 	for (let i = 0; i < GearList.length; i++)
 	{
 		if (Inventory[CurrentSlot] == GearList[i].Type & HeldImg != null)
@@ -406,18 +415,19 @@ function UpdateScreen() {
 			ctx.stroke();
 		}
 	}
+	
 	FireTime += (1/60);	
-	for (let i = 0; i < FiredWater.length; i++) // Make fired waters appear
+	for (let i = 0; i < FiredWater.length; i++) // Make fired waters appear. Not read by PlayerNum != PlayerCount
 	{
-		ScreenCheck(FiredWater[i].X, FiredWater[i].Y, Waterimg, 30);
 		if (PlayerNum == PlayerCount)
 		{
 			FiredWater[i].X = FiredWater[i].X + FiredWater[i].Xgrad;
 		    FiredWater[i].Y = FiredWater[i].Y + FiredWater[i].Ygrad;
 		}
+		
 		if (FiredWater[i].Num != PlayerNum)
 		{
-			if (CollideCheck(PlayerPos[PlayerNum].X, FiredWater[i].X, PlayerPos[PlayerNum].Y, FiredWater[i].Y, 40, 30) == true & InGame == true)
+			if (CollideCheck(PlayerPos[PlayerNum-1].X, FiredWater[i].X, PlayerPos[PlayerNum-1].Y, FiredWater[i].Y, 40, 30) == true & InGame == true)
 			{
 				Shield -= FiredWater[i].Dmg;
 				if (Shield < 0)
@@ -431,25 +441,33 @@ function UpdateScreen() {
 					PlayerNum = FiredWater[i].Num;
 					GameEnded();
 				}
+				FiredWater.splice(i, 1);
+				if (Practice == false) Update("FiredWater");
 			}
 		}
-		for (let j = 0; j < SpawnedImgs.length; j++)
+		
+		if (PlayerNum == PlayerCount)
 		{
-			if (SpawnedImgs[j].Type == "Rock")
-	        {
-			    if (CollideCheck(FiredWater[i].X, SpawnedImgs[j].X, FiredWater[i].Y, SpawnedImgs[j].Y, 30, 90) == true)
+		    for (let j = 0; j < SpawnedImgs.length; j++)
+			{
+				if (SpawnedImgs[j].Type == "Rock")
 				{
-					FiredWater.splice(i, 1);
+					if (CollideCheck(FiredWater[i].X, SpawnedImgs[j].X, FiredWater[i].Y, SpawnedImgs[j].Y, 30, 90) == true)
+					{
+						FiredWater.splice(i, 1);
+					}
 				}
 			}
-		}					
-		if (CollideCheck(FiredWater[i].X, FiredWater[i].TargetX, FiredWater[i].Y, FiredWater[i].TargetY, 5, 5) == true)
-		{
-			FiredWater.splice(i, 1);
+			if (CollideCheck(FiredWater[i].X, FiredWater[i].TargetX, FiredWater[i].Y, FiredWater[i].TargetY, 5, 5) == true)
+			{
+				FiredWater.splice(i, 1);
+			}
 		}
+		console.log("Make appear"); // Only running for PlayerNum == PlayerCount
+		ScreenCheck(FiredWater[i].X, FiredWater[i].Y, Waterimg, 30);
 	}
 	Players.textContent = `${PlayerCount} players`;
-	if (PlayerNum == PlayerCount) Update("FiredWater");
+	if (PlayerNum == PlayerCount & Practice == false) Update("FiredWater");
 } 
 
 function ZoneSystem() {	
@@ -513,36 +531,40 @@ function Read() {
 			PlayerPos = [];
 			let Objects = (doc.data().PlayerData).split('/');
 			// Each obj in Objects is a player data in csv form
-			for (let i = 0; i < Objects.length; i++)
+			for (let i = 0; i < 4; i++)
 			{
 				let Obj = Objects[i].split(',');
 				PlayerPos.push({X: parseInt(Obj[0]), Y: parseInt(Obj[1]), In: Obj[2]});
 			}		
 			
 			SpawnedImgs = [];
-			Objects = (doc.data().SpawnedImgs).split('/');
-			// Each obj is a spawned image Type, X, Y, HW(The height and width)
-			for (let i = 0; i < 80; i++)
-			{
-				let Obj = Objects[i].split(',');
-				SpawnedImgs.push({Type: Obj[0], X: parseInt(Obj[1]), Y: parseInt(Obj[2]), HW: parseInt(Obj[3])});
+			try {
+				Objects = (doc.data().SpawnedImgs).split('/');
+				// Each obj is a spawned image Type, X, Y, HW(The height and width)
+				for (let i = 0; i < 80; i++)
+				{
+					let Obj = Objects[i].split(',');
+					SpawnedImgs.push({Type: Obj[0], X: parseInt(Obj[1]), Y: parseInt(Obj[2]), HW: parseInt(Obj[3])});
+				}
 			}
-			//console.log("Read: " + SpawnedImgs.length); // Not 80 usually
-			
-			if (doc.data().FiredWater == "") return;
-			Objects = (doc.data().FiredWater).split(',');
-			for (let i = 0; i < Objects.length; i++)
-			{
-				let Obj = Objects[i].Split(',');
-				var WaterInfo = 
-				{Dmg: Obj[0], X: Obj[1], Y: Obj[2], TargetX: Obj[3], TargetY: Obj[4], Xgrad: Obj[5], Ygrad: Obj[6], Num: Obj[7]};
-			}
+			catch{}
+				
+			// Reading here needs checking
+			try {
+				Objects = (doc.data().FiredWater).split('/');
+				for (let i = 0; i < Objects.length; i++)
+				{
+					let Obj = Objects[i].Split(',');
+					var WaterInfo = 
+					{Dmg: Obj[0], X: Obj[1], Y: Obj[2], TargetX: Obj[3], TargetY: Obj[4], Xgrad: Obj[5], Ygrad: Obj[6], Num: Obj[7]};
+				}
+	    	}
+			catch{};
 		})
 	})
 }
 
 function Update(DataType) {
-	
 	let CsvString = "";
     if (DataType == 'PlayerData')
 	{
@@ -586,30 +608,33 @@ function ControlsScreen() {alert("Press 1/2/3/4 for changing in inventory. WASD 
 Controls.onclick = ControlsScreen;
 
 function GameEnded() { // Needs improving to work for when player leaves
-	if (Practice == false | InGame == true) // Make & instead of |
+	if (Practice == false & InGame == true)
 	{
+		clearInterval(drawing);
+		drawing = setInterval(UpdateScreen, 50);
 		if (PlayerCount == 1) Placement.textContent = "You placed: 1st";
 		if (PlayerCount == 2) Placement.textContent = "You placed: 2nd";
 		if (PlayerCount == 3) Placement.textContent = "You placed: 3rd";
 		if (PlayerCount == 4) Placement.textContent = "You placed: 4th";
 	    Info.classList.add("hide");
-		PlayerPos[PlayerNum-1].In = false;
+		PlayerPos[PlayerNum-1].In = "false";
 		InGame = false;
 		PlayerCount--;
 		if (PlayerCount == 0 & InGame == true) 
 		{
 			PlayerPos = [{X: 50, Y: 50, In: "true"}, {X: 2950, Y: 50, In: "true"}, {X: 50, Y: 2950, In: "true"}, {X: 2950, Y: 2950, In: "true"}];
+			Update("PlayerData");
 			FiredWater = [{Dmg: 0, X: -1000, Y: -1000, TargetX: 0, TargetY: 0, Xgrad: 0, Ygrad: 0, Num: 0}];
 			Update("FiredWater");
 			SpawnedImgs = [{Type: "Smoke", X: -1000, Y: -1000, HW: 0}];
 			Update("SpawnedImgs");
 		}
-		Update("PlayerData");
 	}
 	if (Practice == true) 
 	{
-		alert("You were eliminated");
-		location.reload();
+		//clearInterval(zonerun);
+		//alert("You were eliminated");
+		//location.reload();
 	}
 }
 
@@ -665,4 +690,67 @@ function StartPractice() {
 }
 EnterPractice.onclick = StartPractice;
 
-Read();
+function ChangeScreen() {
+	Menu.classList.toggle("hide");
+	SettingScreen.classList.toggle("hide");
+	KeySequence = "";
+}
+Settings.onclick = ChangeScreen;
+Back.onclick = ChangeScreen;
+
+function ChangeBinds() {
+	if (NewKey.value != "")
+	{
+		let str = KeyToChange.textContent;
+		// Will need to be more efficient and check if the key is already binded
+
+		if (str == "Press Move Up key")
+		{
+			KeyBinds[0] = `${NewKey.value}`;
+			KeyToChange.textContent = "Press Move Left key";
+		}
+		else if (str == "Press Move Left key")
+		{
+			KeyBinds[1] = `${NewKey.value}`;
+			KeyToChange.textContent = "Press Move Right key";
+		}
+		else if (str == "Press Move Right key")
+		{
+			KeyBinds[2] = `${NewKey.value}`;
+			KeyToChange.textContent = "Press Move Down key";
+		}
+		else if (str == "Press Move Down key")
+		{
+			KeyBinds[3] = `${NewKey.value}`;
+			KeyToChange.textContent = "Press Pick Up key";
+		}
+		else if (str == "Press Pick Up key")
+		{
+			KeyBinds[4] = `${NewKey.value}`;
+			KeyToChange.textContent = "Press Use Slot 1 key";
+		}
+		else if (str == "Press Use Slot 1 key")
+		{
+			KeyBinds[5] = `${NewKey.value}`;
+			KeyToChange.textContent = "Press Use Slot 2 key";
+		}
+		else if (str == "Press Use Slot 2 key")
+		{
+			KeyBinds[6] = `${NewKey.value}`;
+			KeyToChange.textContent = "Press Use Slot 3 key";
+		}
+		else if (str == "Press Use Slot 3 key")
+		{
+			KeyBinds[7] = `${NewKey.value}`;
+			KeyToChange.textContent = "Press Use Slot 4 key";
+		}
+		else if (str == "Press Use Slot 4 key")
+		{
+			KeyBinds[8] = `${NewKey.value}`;
+			alert("Successful change");
+			KeyToChange.textContent = "Press Move Up key";
+		}
+		NewKey.textContent != "";
+	}
+}
+change.onclick = ChangeBinds;
