@@ -10,7 +10,6 @@
 // less movement speed when diagonal
 // Non square player/enemy, rotating based on mouse angle
 
-
 const firebaseConfig = {
 	apiKey: "AIzaSyAG48CZGZb0KwGGA0s8lZKRG3xTDpOrL4Q",
 	authDomain: "external-project-server.firebaseapp.com",
@@ -26,12 +25,12 @@ const db = firebase.firestore();
 
 // PERSONAL VARIABLES
 var Zones = [
-	{Length: 15, Sizing: 2600, Dmg: 50}, 
+	{Length: 15, Sizing: 2600, Dmg: 5}, 
 	{Length: 25, Sizing: 1800, Dmg: 8}, 									
 	{Length: 35, Sizing: 1600, Dmg: 12},
-	{Length: 35, Sizing: 1200, Dmg: 15},
-	{Length: 25, Sizing: 900, Dmg: 20}, 
-	{Length: 15, Sizing: 0, Dmg: 25},   
+	{Length: 35, Sizing: 1200, Dmg: 20},
+	{Length: 25, Sizing: 900, Dmg: 25}, 
+	{Length: 15, Sizing: 0, Dmg: 30},   
 ];
 var Inventory = ["", "", "", ""]
 var ItemList = [
@@ -50,8 +49,8 @@ var GearList = [
 	{Type: "WaterBalloon", FireDelay: 1.3, Range: 500, MinRange: 250, Dmg: 95},
 ]
 var Keys = [];
-var KeyBinds = ["w", "a", "r", "s", "f", "1", "2", "3", "4"];
-var ChangingKeys = ["Move Up", "Move Left", "Move Right", "Move Down", "Pick Up", "Use Slot 1", "Use Slot 2", "Use Slot 3", "Use Slot 4"];
+var KeyBinds = [119, 97, 100, 115, "f", "1", "2", "3", "4"];
+var ChangingKeys = ["Move Up", "Move Left", "Move Right", "Move Down", "Pick Up", "Use Slot 1", "Use Slot 2", "Use Slot 3", "Use Slot 4", 0];
 var checking, zonerun, drawing, PlayerID, Speed = 5, HP = 100, Shield = 0, ElementNum, PlayerNum=1;
 var InGame = false, InHeal = false, HeldImg='', Practice = false, CurrentSlot = -1;
 var myX, myY, FireTime=0, HealTime=0, KeySequence="";
@@ -150,7 +149,7 @@ function GameStart() {
 		if (PlayerID.at(-1) == '4' | Practice == true) 
 		{
 		    GameGeneration();
-			if (PlayerID.at(-1) == PlayerCount & Practice == false) // adapts if a player leaves
+			if (Practice == false) // adapts if a player leaves
 			{
 				Update("SpawnedImgs");
 			}
@@ -187,7 +186,7 @@ function EmptyInventory() {
 function Fire() {
 	for (let i = 0; i < GearList.length; i++)
 	{
-		if (GearList[i].Type == Inventory[CurrentSlot] & FireTime >= GearList[i].FireDelay)
+		if (GearList[i].Type == Inventory[CurrentSlot-1] & FireTime >= GearList[i].FireDelay)
 		{
 			FireTime = 0;
 		    let Xdist = event.clientX - 8 - World.width/2;
@@ -224,14 +223,16 @@ function Heal() {
 }
 
 function Moving() {	
-	// will need to find the keycode of the keybinds
-	
 	if (InGame == false | InHeal == true) return;
-	 
-	if (Keys[87] == true) PlayerPos[PlayerNum-1].Y -= Speed;
-	if (Keys[83] == true) PlayerPos[PlayerNum-1].Y += Speed;
-	if (Keys[65] == true) PlayerPos[PlayerNum-1].X -= Speed;
-	if (Keys[68] == true) PlayerPos[PlayerNum-1].X += Speed;
+	let upkey = KeyBinds[0];
+	let leftkey = KeyBinds[1];
+	let rightkey = KeyBinds[2];
+	let downkey = KeyBinds[3];
+	
+	if (Keys[upkey] == true) PlayerPos[PlayerNum-1].Y -= Speed;
+	if (Keys[downkey] == true) PlayerPos[PlayerNum-1].Y += Speed;
+	if (Keys[leftkey] == true) PlayerPos[PlayerNum-1].X -= Speed;
+	if (Keys[rightkey] == true) PlayerPos[PlayerNum-1].X += Speed;
 	
 	for (let i = 0; i < SpawnedImgs.length; i++)
 	{
@@ -240,21 +241,21 @@ function Moving() {
 			let x = PlayerPos[PlayerNum-1].X, y = PlayerPos[PlayerNum-1].Y;
 			if (CollideCheck(x, SpawnedImgs[i].X, y, SpawnedImgs[i].Y, 40, SpawnedImgs[i].HW) == true)
 			{
-				if (Keys[87] == true & y+40 >= SpawnedImgs[i].Y) 
-				{
-					PlayerPos[PlayerNum-1].X += Speed;
-				}
-				if (Keys[83] == true & y <= SpawnedImgs[i].Y+SpawnedImgs[i].HW)
+				if (Keys[downkey] == true & y+40 >= SpawnedImgs[i].Y) 
 				{
 					PlayerPos[PlayerNum-1].Y -= Speed;
 				}
-				if (Keys[65] == true & x+40 >= SpawnedImgs[i].X)
+				if (Keys[upkey] == true & y <= SpawnedImgs[i].Y+SpawnedImgs[i].HW)
 				{
-					PlayerPos[PlayerNum-1].X += Speed;
+					PlayerPos[PlayerNum-1].Y += Speed;
 				}
-				if (Keys[68] == true & x <= SpawnedImgs[i].X+SpawnedImgs[i].HW)
+				if (Keys[rightkey] == true & x+40 >= SpawnedImgs[i].X)
 				{
 					PlayerPos[PlayerNum-1].X -= Speed;
+				}
+				if (Keys[leftkey] == true & x <= SpawnedImgs[i].X+SpawnedImgs[i].HW)
+				{
+					PlayerPos[PlayerNum-1].X += Speed;
 				}
 			}
 		}
@@ -295,37 +296,43 @@ function PickUp() {
 }
 
 function Usage() {
-	if (event.key == "f")
+	if (event.key == KeyBinds[4])
 	{
 		PickUp();
 		return;
 	}
 	if (InHeal == true | InGame == false) return;
-	if (event.key != '1' & event.key != '2' & event.key != '3' & event.key != '4') return;
+	if (event.key != KeyBinds[5] & event.key != KeyBinds[6] & event.key != KeyBinds[7] & event.key != KeyBinds[8]) return;
 	
-	if (CurrentSlot == -1)
+	let SelectionKeys = [KeyBinds[5], KeyBinds[6], KeyBinds[7], KeyBinds[8]];
+	console.log(SelectionKeys);
+	for (let i = 0; i < SelectionKeys.length; i++)
 	{
-		CurrentSlot = (event.key)-1;
-		HeldImg = document.getElementById(`Held${CurrentSlot+1}`);
+		if (SelectionKeys[i] != event.key) continue;
+		if (CurrentSlot == -1)
+		{
+			CurrentSlot = i+1;
+			HeldImg = document.getElementById(`Held${CurrentSlot}`);
+		}
+		try {
+			HeldImg = document.getElementById(`Held${CurrentSlot}`);
+			HeldImg.classList.remove("Highlighted");
+		}
+		catch {}
+		CurrentSlot = i+1;
 	}
-	try {
-		HeldImg = document.getElementById(`Held${CurrentSlot+1}`);
-		HeldImg.classList.remove("Highlighted");
-	}
-	catch {}
-	CurrentSlot = (event.key)-1;
-	HeldImg = document.getElementById(`Held${CurrentSlot+1}`);
+	HeldImg = document.getElementById("Held" + CurrentSlot);
 	for (let i = 0; i < GearList.length; i++)
 	{
-		if (Inventory[CurrentSlot] == GearList[i].Type)
+		if (Inventory[CurrentSlot-1] == GearList[i].Type)
 		{
 			HeldImg.classList.add("Highlighted");
 		}
 	}
 	for (let i = 0; i < HealerList.length; i++)
 	{
-		if (Inventory[event.key-1] != HealerList[i].Type) continue;
-		Inventory[event.key-1] = "";
+		if (Inventory[CurrentSlot-1] != HealerList[i].Type) continue;
+		Inventory[CurrentSlot-1] = "";
 		HeldImg.src = "https://WtrWar.github.io/GearSquare.png";
 		InHeal = true;
 		ElementNum = i;
@@ -353,7 +360,6 @@ EnterGame.onclick = MatchMake;
 
 function UpdateScreen() {
 	if (Practice == false & InGame == true) Read();
-	console.log(FiredWater.length);
 	
 	if (HealTime > 0)
 	{
@@ -402,7 +408,7 @@ function UpdateScreen() {
 	
 	for (let i = 0; i < GearList.length; i++)
 	{
-		if (Inventory[CurrentSlot] == GearList[i].Type & HeldImg != null)
+		if (Inventory[CurrentSlot-1] == GearList[i].Type & HeldImg != null)
 		{
 			ctx.setLineDash([8, 15]);
 			ctx.beginPath();
@@ -437,8 +443,12 @@ function UpdateScreen() {
 				}
 				if (HP <= 0) 
 				{
-					let Eliminator = FiredWater[i].Num;
-					PlayerNum = FiredWater[i].Num;
+					try {
+					  let PlayerNum = FiredWater[i].Num; // Spectate the eliminator
+					}
+					catch {
+						// Choose a random
+			    	}
 					GameEnded();
 				}
 				FiredWater.splice(i, 1);
@@ -604,7 +614,7 @@ function Update(DataType) {
 
 
 // OTHER FUNCTIONS
-function ControlsScreen() {alert("Press 1/2/3/4 for changing in inventory. WASD for moving. Click when holding a gear and within the black circle, but outside the red circle (if visible) to fire")}
+function ControlsScreen() {alert(`Press 1/2/3/4 to use inventory, WASD to move, and F to pick up. The controls will be different if changed in settings. Click when holding a gear and within the black circle, but outside the red circle (if visible) to fire.`)}
 Controls.onclick = ControlsScreen;
 
 function GameEnded() { // Needs improving to work for when player leaves
@@ -632,9 +642,9 @@ function GameEnded() { // Needs improving to work for when player leaves
 	}
 	if (Practice == true) 
 	{
-		//clearInterval(zonerun);
-		//alert("You were eliminated");
-		//location.reload();
+		clearInterval(zonerun);
+		alert("You were eliminated");
+		location.reload();
 	}
 }
 
@@ -658,13 +668,19 @@ HTP.onclick = HowToPlay;
 
 function KeyDown() {
     Keys = (Keys || []);             // Copied.       https://www.w3schools.com/graphics/game_controllers.asp
-    Keys[event.keyCode] = true;          // Copied
+	
+	let key = event.key;
+    Keys[key.charCodeAt(0)] = true;       
 	Moving();              
 	Usage();
 }
 document.onkeydown = KeyDown;
 
-function KeyUp() {Keys[event.keyCode] = false;}
+function KeyUp() {
+	let key = event.key;
+	Keys[key.charCodeAt(0)] = false;
+    
+}
 document.onkeyup = KeyUp;
 
 function ScreenCheck(x, y, Name, size) {
@@ -699,58 +715,38 @@ Settings.onclick = ChangeScreen;
 Back.onclick = ChangeScreen;
 
 function ChangeBinds() {
-	if (NewKey.value != "")
+	let char = NewKey.value;
+	char = char.toLowerCase();
+	char = char.trim();
+	if (char == "" & char.length != 1) return;
+	if (ChangingKeys[9] == 0) 
 	{
-		let str = KeyToChange.textContent;
-		// Will need to be more efficient and check if the key is already binded
-
-		if (str == "Press Move Up key")
-		{
-			KeyBinds[0] = `${NewKey.value}`;
-			KeyToChange.textContent = "Press Move Left key";
+		Back.classList.add("hide");
+		KeyBinds = ['', '', '', '', '', '', '', '', '']; // To track if keybinds are repeated
+		ChangingKeys[9] = 0;
+	}
+	let num = ChangingKeys[9];
+	for (let i = 0; i < KeyBinds.length-1; i++)
+	{
+		if (char == KeyBinds[i] | char.charCodeAt(0) == KeyBinds[i]) // Already binded
+	     {
+			alert("Already a used key");
+			return;
 		}
-		else if (str == "Press Move Left key")
-		{
-			KeyBinds[1] = `${NewKey.value}`;
-			KeyToChange.textContent = "Press Move Right key";
-		}
-		else if (str == "Press Move Right key")
-		{
-			KeyBinds[2] = `${NewKey.value}`;
-			KeyToChange.textContent = "Press Move Down key";
-		}
-		else if (str == "Press Move Down key")
-		{
-			KeyBinds[3] = `${NewKey.value}`;
-			KeyToChange.textContent = "Press Pick Up key";
-		}
-		else if (str == "Press Pick Up key")
-		{
-			KeyBinds[4] = `${NewKey.value}`;
-			KeyToChange.textContent = "Press Use Slot 1 key";
-		}
-		else if (str == "Press Use Slot 1 key")
-		{
-			KeyBinds[5] = `${NewKey.value}`;
-			KeyToChange.textContent = "Press Use Slot 2 key";
-		}
-		else if (str == "Press Use Slot 2 key")
-		{
-			KeyBinds[6] = `${NewKey.value}`;
-			KeyToChange.textContent = "Press Use Slot 3 key";
-		}
-		else if (str == "Press Use Slot 3 key")
-		{
-			KeyBinds[7] = `${NewKey.value}`;
-			KeyToChange.textContent = "Press Use Slot 4 key";
-		}
-		else if (str == "Press Use Slot 4 key")
-		{
-			KeyBinds[8] = `${NewKey.value}`;
-			alert("Successful change");
-			KeyToChange.textContent = "Press Move Up key";
-		}
-		NewKey.textContent != "";
+	}
+	KeyBinds[num] = char;
+	if (num < 4) // Binds for moving. Need to be in KeyCode for diagonal movement
+	{
+		KeyBinds[num] = char.charCodeAt(0); // converts to UniCode/Ascii or something like that. not the keycode though.
+	}
+	ChangingKeys[9] = num += 1;
+	KeyToChange.textContent = "Press " + ChangingKeys[num]; // First will access element 1, then element 2...
+	NewKey.value = "";
+	if (num == 9) // Accessing the number and not a bind
+	{
+		ChangingKeys[9] = 0;
+		KeyToChange.textContent = "Press " + ChangingKeys[0];
+		Back.classList.remove("hide");
 	}
 }
 change.onclick = ChangeBinds;
