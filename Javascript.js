@@ -352,129 +352,131 @@ function UpdateScreen() {
 	if (Practice == false) 
 	{
 		// MultiplayerDelay++;
-		Read();
 		if (MultiplayerDelay == 4) // 10fps update
 		{
 			Read();
 			MultiplayerDelay = 0;
 		}
 	}
-	if (HealTime > 0)
+	if (Read() == true)
 	{
-	    HealInfo.textContent = `${Math.ceil(HealTime)}s`;
-		HealTime -= (1/35);
-	}
-	if (HealTime <= 0) HealInfo.textContent = "";
-
-	myX = PlayerPos[PlayerNum-1].X;
-	myY = PlayerPos[PlayerNum-1].Y;
-	 
-	let topx = TheZone.TopX - myX + World.width/2;
-	let topy = TheZone.TopY - myY + World.height/2;
-	let bottomx = TheZone.BottomX - myX + World.width/2;
-	let dist = bottomx-topx; // changing when player moves
-
-	ctx.fillStyle = "blue";
-	ctx.fillRect(0, 0, World.width, World.height);
-	ctx.fillStyle = "lightgreen";
-	ctx.fillRect(topx, topy, dist, dist);
-	
-	if (Practice == false)
-	{
-		for (let i = 1; i < PlayerPos.length+1; i++) // make Opponents appear (Be red)
-		{	
-			if (i == PlayerNum) continue;
-			if (PlayerPos[i-1].In == "false") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, GameImgs[3], 40);
-			if (PlayerPos[i-1].In == "true") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, GameImgs[1], 40)
-		}
-	}
-	if (PlayerPos[PlayerNum-1].In == "false") ctx.drawImage(GameImgs[3], World.width/2, World.height/2, 40, 40);
-    if (PlayerPos[PlayerNum-1].In == "true") ctx.drawImage(GameImgs[0], World.width/2, World.height/2, 40, 40);
-	
-	for (let i = 0; i < SpawnedImgs.length; i++) // Rocks, items etc
-	{
-		let x = SpawnedImgs[i].X;
-		let y = SpawnedImgs[i].Y;
-		for (let j = 0; j < GameImgs.length; j++)
+		if (HealTime > 0)
 		{
-			if (SpawnedImgs[i].Type == ImgNames[j]) // ImgNames and GameImgs Parallel
-			{
-		        ScreenCheck(SpawnedImgs[i].X, SpawnedImgs[i].Y, GameImgs[j], SpawnedImgs[i].HW);
+			HealInfo.textContent = `${Math.ceil(HealTime)}s`;
+			HealTime -= (1/35);
+		}
+		if (HealTime <= 0) HealInfo.textContent = "";
+
+		myX = PlayerPos[PlayerNum-1].X;
+		myY = PlayerPos[PlayerNum-1].Y;
+
+		let topx = TheZone.TopX - myX + World.width/2;
+		let topy = TheZone.TopY - myY + World.height/2;
+		let bottomx = TheZone.BottomX - myX + World.width/2;
+		let dist = bottomx-topx; // changing when player moves
+
+		ctx.fillStyle = "blue";
+		ctx.fillRect(0, 0, World.width, World.height);
+		ctx.fillStyle = "lightgreen";
+		ctx.fillRect(topx, topy, dist, dist);
+
+		if (Practice == false)
+		{
+			for (let i = 1; i < PlayerPos.length+1; i++) // make Opponents appear (Be red)
+			{	
+				if (i == PlayerNum) continue;
+				if (PlayerPos[i-1].In == "false") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, GameImgs[3], 40);
+				if (PlayerPos[i-1].In == "true") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, GameImgs[1], 40)
 			}
 		}
-	}
-	
-	for (let i = 0; i < GearList.length; i++)
-	{
-		if (Inventory[CurrentSlot-1] == GearList[i].Type & HeldImg != null)
+		if (PlayerPos[PlayerNum-1].In == "false") ctx.drawImage(GameImgs[3], World.width/2, World.height/2, 40, 40);
+		if (PlayerPos[PlayerNum-1].In == "true") ctx.drawImage(GameImgs[0], World.width/2, World.height/2, 40, 40);
+
+		for (let i = 0; i < SpawnedImgs.length; i++) // Rocks, items etc
 		{
-			ctx.setLineDash([8, 15]);
-			ctx.beginPath();
-			ctx.arc(World.width/2, World.height/2, GearList[i].Range, 0, 2*Math.PI);
-			ctx.strokeStyle = "black";
-			ctx.stroke();
-			ctx.beginPath();
-			ctx.arc(World.width/2, World.height/2, GearList[i].MinRange, 0, 2*Math.PI);
-			ctx.strokeStyle = "red";
-			ctx.stroke();
-		}
-	}
-	
-	FireTime += (1/60);	
-	console.log(FiredWater.length);
-	for (let i = 0; i < FiredWater.length; i++) // Make fired waters appear. Not read by PlayerNum != PlayerCount
-	{
-		if (PlayerNum == PlayerCount)
-		{
-			FiredWater[i].X = FiredWater[i].X + FiredWater[i].Xgrad;
-		    FiredWater[i].Y = FiredWater[i].Y + FiredWater[i].Ygrad;
-		}
-		
-		if (FiredWater[i].Num == PlayerNum)
-		{
-			if (CollideCheck(PlayerPos[PlayerNum-1].X, FiredWater[i].X, PlayerPos[PlayerNum-1].Y, FiredWater[i].Y, 40, 30) == true & InGame == true)
+			let x = SpawnedImgs[i].X;
+			let y = SpawnedImgs[i].Y;
+			for (let j = 0; j < GameImgs.length; j++)
 			{
-				Shield -= FiredWater[i].Dmg;
-				if (Shield < 0)
+				if (SpawnedImgs[i].Type == ImgNames[j]) // ImgNames and GameImgs Parallel
 				{
-					HP -= (Shield*-1);
-					Shield = 0;
+					ScreenCheck(SpawnedImgs[i].X, SpawnedImgs[i].Y, GameImgs[j], SpawnedImgs[i].HW);
 				}
-				if (HP <= 0) 
-				{ 
-					PlayerPos[PlayerNum-1].In = "false";
-					let num = FiredWater[i].Num; // grabs the eliminator player num
-					SpectateName.textContent = `Spectating: ${PlayerPos[num-1].Name}`;
-					PlayerNum = FiredWater[i].Num; // Spectate the eliminator
-					GameEnded();
-				}
-				FiredWater.splice(i, 1);
-				if (Practice == false) Update("FiredWater");
 			}
 		}
-		
-		if (PlayerNum == PlayerCount)
+
+		for (let i = 0; i < GearList.length; i++)
 		{
-		    for (let j = 0; j < SpawnedImgs.length; j++)
+			if (Inventory[CurrentSlot-1] == GearList[i].Type & HeldImg != null)
 			{
-				if (SpawnedImgs[j].Type == "Rock")
+				ctx.setLineDash([8, 15]);
+				ctx.beginPath();
+				ctx.arc(World.width/2, World.height/2, GearList[i].Range, 0, 2*Math.PI);
+				ctx.strokeStyle = "black";
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.arc(World.width/2, World.height/2, GearList[i].MinRange, 0, 2*Math.PI);
+				ctx.strokeStyle = "red";
+				ctx.stroke();
+			}
+		}
+
+		FireTime += (1/60);	
+		console.log(FiredWater.length);
+		for (let i = 0; i < FiredWater.length; i++) // Make fired waters appear. Not read by PlayerNum != PlayerCount
+		{
+			if (PlayerNum == PlayerCount)
+			{
+				FiredWater[i].X = FiredWater[i].X + FiredWater[i].Xgrad;
+				FiredWater[i].Y = FiredWater[i].Y + FiredWater[i].Ygrad;
+			}
+
+			if (FiredWater[i].Num == PlayerNum)
+			{
+				if (CollideCheck(PlayerPos[PlayerNum-1].X, FiredWater[i].X, PlayerPos[PlayerNum-1].Y, FiredWater[i].Y, 40, 30) == true & InGame == true)
 				{
-					if (CollideCheck(FiredWater[i].X, SpawnedImgs[j].X, FiredWater[i].Y, SpawnedImgs[j].Y, 30, 90) == true)
+					Shield -= FiredWater[i].Dmg;
+					if (Shield < 0)
 					{
-						FiredWater.splice(i, 1);
+						HP -= (Shield*-1);
+						Shield = 0;
+					}
+					if (HP <= 0) 
+					{ 
+						PlayerPos[PlayerNum-1].In = "false";
+						let num = FiredWater[i].Num; // grabs the eliminator player num
+						SpectateName.textContent = `Spectating: ${PlayerPos[num-1].Name}`;
+						PlayerNum = FiredWater[i].Num; // Spectate the eliminator
+						GameEnded();
+					}
+					FiredWater.splice(i, 1);
+					if (Practice == false) Update("FiredWater");
+				}
+			}
+
+			if (PlayerNum == PlayerCount)
+			{
+				for (let j = 0; j < SpawnedImgs.length; j++)
+				{
+					if (SpawnedImgs[j].Type == "Rock")
+					{
+						if (CollideCheck(FiredWater[i].X, SpawnedImgs[j].X, FiredWater[i].Y, SpawnedImgs[j].Y, 30, 90) == true)
+						{
+							FiredWater.splice(i, 1);
+						}
 					}
 				}
+				if (CollideCheck(FiredWater[i].X, FiredWater[i].TargetX, FiredWater[i].Y, FiredWater[i].TargetY, 5, 5) == true)
+				{
+					FiredWater.splice(i, 1);
+				}
 			}
-			if (CollideCheck(FiredWater[i].X, FiredWater[i].TargetX, FiredWater[i].Y, FiredWater[i].TargetY, 5, 5) == true)
-			{
-				FiredWater.splice(i, 1);
-			}
+			console.log("Make appear"); // Only running for PlayerNum == PlayerCount
+			ScreenCheck(FiredWater[i].X, FiredWater[i].Y, GameImgs[2], 30);
 		}
-		console.log("Make appear"); // Only running for PlayerNum == PlayerCount
-		ScreenCheck(FiredWater[i].X, FiredWater[i].Y, GameImgs[2], 30);
+		Players.textContent = `${PlayerCount} players`;
+		if (PlayerNum == PlayerCount & Practice == false) Update("FiredWater");
 	}
-	Players.textContent = `${PlayerCount} players`;
-	if (PlayerNum == PlayerCount & Practice == false) Update("FiredWater");
 } 
 
 function ZoneSystem() {	
