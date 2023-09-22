@@ -1,7 +1,7 @@
 // Multiplayer:
 // If a player leaves in MatchMake, such as player 2, then player 3 ID becomes 2 and Player4 ID becomes 3. Otherwise there could be 2 player 3s
-// Sometimes can't see others. can't see fired water. 
-// Leaving a game reducing playercount needs checking (May be just because of 2 dreamweaver ran tabs)
+// Can't see fired water. 
+// Leaving a game reducing playercount needs checking (May be just because of 2 dreamweaver ran tabs) 
 
 // Suggestions:
 // Cancelling healing
@@ -32,7 +32,6 @@ var Zones = [
 	{Length: 25, Sizing: 900, Dmg: 25}, 
 	{Length: 15, Sizing: 0, Dmg: 30},   
 ];
-var Inventory = ["", "", "", ""]
 var ItemList = [
 	{Type: "Umbrella", Duration: 3500},
 	{Type: "Smoke", Duration: 6000},
@@ -48,42 +47,29 @@ var GearList = [
 	{Type: "WaterGun", FireDelay: 0.5, Range: 450, MinRange: 0, Dmg: 19},
 	{Type: "WaterBalloon", FireDelay: 1.3, Range: 500, MinRange: 250, Dmg: 95},
 ]
+// The above objects can be easily adjusted or have a new item added by providing an image, and adding new object
+var Inventory = ["", "", "", ""];
 var Keys = [];
 var KeyBinds = [119, 97, 100, 115, "f", "1", "2", "3", "4"];
 var ChangingKeys = ["Move Up", "Move Left", "Move Right", "Move Down", "Pick Up", "Use Slot 1", "Use Slot 2", "Use Slot 3", "Use Slot 4", 0];
 var checking, zonerun, drawing, PlayerID, Speed = 5, HP = 100, Shield = 0, ElementNum, PlayerNum=1;
-var InGame = false, InHeal = false, HeldImg='', Practice = false, CurrentSlot = -1;
-var myX, myY, FireTime=0, HealTime=0, KeySequence="";
+var InGame = false, InHeal = false, HeldImg='', CurrentSlot = -1;
+var myX, myY, FireTime=0, HealTime=0;
 var TheZone = {TopX: 0, TopY: 0, BottomX: 3000, BottomY: 3000, Time: Zones[0].Length, Shrink: 3000-Zones[0].Sizing, CurrentZone: 1}; // Same for everyone, so doesn't need to be in firebase
+var MultiplayerDelay = 0, Preparing = true;
 
 var GameImgs = [];
-var ImgNames = [];
+var ImgNames = ["Orange", "Red", "Water", "Eliminated", "Rock", "Bush"];
 for (let i = 0; i < GearList.length; i++) ImgNames.push(GearList[i].Type);
 for (let i = 0; i < ItemList.length; i++) ImgNames.push(ItemList[i].Type);
 for (let i = 0; i < HealerList.length; i++)	ImgNames.push(HealerList[i].Type);
-ImgNames.push("Rock");
-ImgNames.push("Bush");
-var Playerimg = new Image();
-Playerimg.src = "https://WtrWar.github.io/Orange.png";
-var Enemyimg = new Image();
-Enemyimg.src = "https://WtrWar.github.io/Red.png";
-var Waterimg = new Image();
-Waterimg.src = "https://WtrWar.github.io/Water.png";
-var Eliminateimg = new Image();
-Eliminateimg.src = "https://WtrWar.github.io/Eliminated.png";
-
-
-// MULTIPLAYER/WORLD VARIABLES
-var SpawnedImgs = [];
-var FiredWater = []; // All water projectile locations, dmg, direction, target spot
-var PlayerPos = [{X: 50, Y: 50, In: "true"}, {X: 2950, Y: 50, In: "true"}, {X: 50, Y: 2950, In: "true"}, {X: 2950, Y: 2950, In: "true"}];
-var EnteredGame = false, PlayerCount=1;
-
 
 var Minimap = WorldMap.getContext("2d");
-Minimap.fillStyle = "lightgreen";
-Minimap.fillRect(0, 0, WorldMap.width, WorldMap.height);
 var ctx = World.getContext("2d");
+
+// MULTIPLAYER/WORLD VARIABLES
+var SpawnedImgs = [], FiredWater = [], PlayerPos = [{X: 50, Y: 50, In: "true", Name: ""}, {X: 2950, Y: 50, In: "true", Name: ""}, {X: 50, Y: 2950, In: "true", Name: ""}, {X: 2950, Y: 2950, In: "true", Name: ""}];;
+var EnteredGame = false, PlayerCount = 1, Practice = false, GameLoaded = false, MyName="";
 
 
 // GAME LOAD FUNCTIONS
@@ -103,7 +89,7 @@ function GameGeneration() {
 		var Xcoord = (Math.ceil(Math.random()*28))*100;
 		var Ycoord = (Math.ceil(Math.random()*28))*100;
 		
-		var Collision = true;
+		let Collision = true;
 		while (Collision == true)
 		{
 			Collision = false;
@@ -117,65 +103,71 @@ function GameGeneration() {
 				}
 			}
 		}
-		if (i < 55) var Data = {Type: Selection, X: Xcoord, Y: Ycoord, HW: 30};
-		if (i >= 55) var Data = {Type: Selection, X: Xcoord, Y: Ycoord, HW: 90};
-		SpawnedImgs.push(Data);
+		if (i < 55) SpawnedImgs.push({Type: Selection, X: Xcoord, Y: Ycoord, HW: 30});
+		if (i >= 55) SpawnedImgs.push({Type: Selection, X: Xcoord, Y: Ycoord, HW: 90});
 	}
+	Update("SpawnedImgs");
 }
 
 function GameStart() {
-	PlayerPos = [{X: 50, Y: 50, In: "true"}, {X: 2950, Y: 50, In: "true"}, {X: 50, Y: 2950, In: "true"}, {X: 2950, Y: 2950, In: "true"}];
+	if (Practice == true) PlayerPos = [{X: 50, Y: 50, In: "true", Name: ""}, {X: 2950, Y: 50, In: "true", Name: ""}, {X: 50, Y: 2950, In: "true", Name: ""}, {X: 2950, Y: 2950, In: "true", Name: ""}];
 	if (Practice == false) Read();
-	if (EnteredGame == false & Practice == false)
+	if (Preparing == false)
 	{
-		PlayerCount++;
-		PlayerID = `${Name.value}${PlayerCount}`;
-		PlayerNum = PlayerCount;
-		Update("PlayerData");
-		EnteredGame = true;
-	}
-	LoadPlayer.textContent = `Loading, ${PlayerCount}/4 Players`;
-	YourId.textContent = `ID: ${PlayerID}`;
-	
-	if (PlayerCount == 4 | Practice == true)
-	{
-		for (let i = 0; i < ImgNames.length; i++)
+		console.log(PlayerCount);
+		if (GameLoaded == true & EnteredGame == false | PlayerCount == 4)
 		{
-			let TempImg = new Image();
-			TempImg.src = `https://WtrWar.github.io/${ImgNames[i]}.png`;
-			GameImgs.push(TempImg);
+			clearInterval(checking);
+			alert("too many");
+			return;
 		}
-		clearInterval(checking);
-		if (PlayerID.at(-1) == '4' | Practice == true) 
+		Menu.classList.add("hide");
+		Load.classList.remove("hide");
+
+		if (EnteredGame == false & Practice == false)
 		{
-		    GameGeneration();
-			if (Practice == false) // adapts if a player leaves
+			PlayerPos[PlayerCount].Name = MyName;
+			PlayerCount++;
+			PlayerID = `${MyName}${PlayerCount}`;
+			PlayerNum = PlayerCount;
+			Update("PlayerData");
+			EnteredGame = true;
+		}
+		LoadPlayer.textContent = `Loading, ${PlayerCount}/4 Players`;
+		YourId.textContent = `ID: ${PlayerID}`;
+
+		if (PlayerCount == 4 | Practice == true)
+		{		
+			clearInterval(checking);
+			for (let i = 0; i < ImgNames.length; i++)
 			{
-				Update("SpawnedImgs");
+				let TempImg = new Image();
+				TempImg.src = `https://WtrWar.github.io/${ImgNames[i]}.png`;
+				GameImgs.push(TempImg);
 			}
+			if (PlayerNum == 4 | Practice == true) 
+			{
+				GameGeneration();
+				if (Practice == false) // adapts if a player leaves
+				{
+					GameLoaded = true;
+					Update("PlayerData");
+					SpawnedImgs = [];
+					Update("SpawnedImgs");
+				}
+			}
+			InGame = true;
+			Load.classList.add("hide");
+			Game.classList.remove("hide");
+			Info.classList.remove("hide");
+			zonerun = setInterval(ZoneSystem, 1000);
+			drawing = setInterval(UpdateScreen, 25); // 40FPS (Saves on Firebase Reading, but still playable)
 		}
-		InGame = true;
-		Load.classList.add("hide");
-		Game.classList.remove("hide");
-		Info.classList.remove("hide");
-		zonerun = setInterval(ZoneSystem, 1000);
-		drawing = setInterval(UpdateScreen, 28.5); // 35FPS (Saves on Firebase Reading, but still playable)
 	}
 }
 
 
 // PERSONAL FUNCTIONS
-function CollideCheck(X1, X2, Y1, Y2, Length1, Length2) {
-	if (X1+Length1 > X2 & X1 < X2+Length2)
-	{
-		if (Y1+Length1 > Y2 & Y1 < Y2+Length2)
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
 function EmptyInventory() {
 	let Slot = (event.target.id).at(-1);
 	Inventory[Slot-1] = ""; // not working. CurrentSlot undefined.
@@ -191,8 +183,8 @@ function Fire() {
 			FireTime = 0;
 		    let Xdist = event.clientX - 8 - World.width/2;
 			let Ydist = event.clientY - 8 - World.height/2;
-
 			// 8 is taken away as (8, 8) is the (0, 0) position in World
+			
 			let Dist = Math.sqrt((Xdist*Xdist) + (Ydist*Ydist));// Dist formula
 			if (Dist < GearList[i].MinRange | Dist > GearList[i].Range) return;
 			// To standardize speed (by making water travel 10px per run), Dist/A = 10, Dist = 10A, Dist/10 = A
@@ -206,6 +198,7 @@ function Fire() {
 			
 			// Num in WaterInfo is used to make sure player doesn't get damaged by their water, and allows spectating eliminator
 			FiredWater.push(WaterInfo);
+			if (Practice == false) Update("FiredWater");
 		}
 	}	
  }
@@ -305,7 +298,6 @@ function Usage() {
 	if (event.key != KeyBinds[5] & event.key != KeyBinds[6] & event.key != KeyBinds[7] & event.key != KeyBinds[8]) return;
 	
 	let SelectionKeys = [KeyBinds[5], KeyBinds[6], KeyBinds[7], KeyBinds[8]];
-	console.log(SelectionKeys);
 	for (let i = 0; i < SelectionKeys.length; i++)
 	{
 		if (SelectionKeys[i] != event.key) continue;
@@ -347,20 +339,26 @@ document.onkeypress = Usage;
 
 // MULTIPLAYER FUNCTIONS
 function MatchMake() {
-	Read(); // Not happening???
-	if (Name.value.length < 3) alert("Player name too short");
-	if (Name.value.length > 15) alert("Player name too long");
-	if (PlayerCount >= 4) alert("The game is full. Try again later");
-	if (Name.value.length < 3 | Name.value.length > 15 | PlayerCount >= 4) return;
-	Menu.classList.add("hide");
-	Load.classList.remove("hide");
+	if (MyName == "") 
+	{
+		alert("Create or sign into an account to play Multiplayer");
+		return;
+	}
 	checking = setInterval(GameStart, 1000); // Check if there are enough players every 1s
 }
 EnterGame.onclick = MatchMake;
 
 function UpdateScreen() {
-	if (Practice == false & InGame == true) Read();
-	
+	if (Practice == false) 
+	{
+		// MultiplayerDelay++;
+		Read();
+		if (MultiplayerDelay == 4) // 10fps update
+		{
+			Read();
+			MultiplayerDelay = 0;
+		}
+	}
 	if (HealTime > 0)
 	{
 	    HealInfo.textContent = `${Math.ceil(HealTime)}s`;
@@ -386,12 +384,12 @@ function UpdateScreen() {
 		for (let i = 1; i < PlayerPos.length+1; i++) // make Opponents appear (Be red)
 		{	
 			if (i == PlayerNum) continue;
-			if (PlayerPos[i-1].In == "false") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, Eliminateimg, 40);
-			if (PlayerPos[i-1].In == "true") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, Enemyimg, 40)
+			if (PlayerPos[i-1].In == "false") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, GameImgs[3], 40);
+			if (PlayerPos[i-1].In == "true") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, GameImgs[1], 40)
 		}
 	}
-	if (PlayerPos[PlayerNum-1].In == "false") ctx.drawImage(Eliminateimg, World.width/2, World.height/2, 40, 40);
-    if (PlayerPos[PlayerNum-1].In == "true") ctx.drawImage(Playerimg, World.width/2, World.height/2, 40, 40);
+	if (PlayerPos[PlayerNum-1].In == "false") ctx.drawImage(GameImgs[3], World.width/2, World.height/2, 40, 40);
+    if (PlayerPos[PlayerNum-1].In == "true") ctx.drawImage(GameImgs[0], World.width/2, World.height/2, 40, 40);
 	
 	for (let i = 0; i < SpawnedImgs.length; i++) // Rocks, items etc
 	{
@@ -423,6 +421,7 @@ function UpdateScreen() {
 	}
 	
 	FireTime += (1/60);	
+	console.log(FiredWater.length);
 	for (let i = 0; i < FiredWater.length; i++) // Make fired waters appear. Not read by PlayerNum != PlayerCount
 	{
 		if (PlayerNum == PlayerCount)
@@ -431,7 +430,7 @@ function UpdateScreen() {
 		    FiredWater[i].Y = FiredWater[i].Y + FiredWater[i].Ygrad;
 		}
 		
-		if (FiredWater[i].Num != PlayerNum)
+		if (FiredWater[i].Num == PlayerNum)
 		{
 			if (CollideCheck(PlayerPos[PlayerNum-1].X, FiredWater[i].X, PlayerPos[PlayerNum-1].Y, FiredWater[i].Y, 40, 30) == true & InGame == true)
 			{
@@ -442,13 +441,11 @@ function UpdateScreen() {
 					Shield = 0;
 				}
 				if (HP <= 0) 
-				{
-					try {
-					  let PlayerNum = FiredWater[i].Num; // Spectate the eliminator
-					}
-					catch {
-						// Choose a random
-			    	}
+				{ 
+					PlayerPos[PlayerNum-1].In = "false";
+					let num = FiredWater[i].Num; // grabs the eliminator player num
+					SpectateName.textContent = `Spectating: ${PlayerPos[num-1].Name}`;
+					PlayerNum = FiredWater[i].Num; // Spectate the eliminator
 					GameEnded();
 				}
 				FiredWater.splice(i, 1);
@@ -474,7 +471,7 @@ function UpdateScreen() {
 			}
 		}
 		console.log("Make appear"); // Only running for PlayerNum == PlayerCount
-		ScreenCheck(FiredWater[i].X, FiredWater[i].Y, Waterimg, 30);
+		ScreenCheck(FiredWater[i].X, FiredWater[i].Y, GameImgs[2], 30);
 	}
 	Players.textContent = `${PlayerCount} players`;
 	if (PlayerNum == PlayerCount & Practice == false) Update("FiredWater");
@@ -508,7 +505,12 @@ function ZoneSystem() {
 	{
 	    HP -= Zones[CurrentZone-1].Dmg;
 		HPbar.value = HP;
-		if (HP <= 0 & InGame == true) GameEnded();
+		if (HP <= 0 & InGame == true) 
+		{
+			PlayerPos[PlayerNum-1].In = "false";
+			// Grab random number 1-4, and check if same as PlayerNum. If not, PlayerNum = RandomNumber, if so, repeat again. (spectating a random player)
+			GameEnded();
+		}
 	}
 	if (TheZone.Time == 0)
 	{
@@ -531,45 +533,58 @@ function ZoneSystem() {
 function Read() {
 	db.collection('Game').get().then((snapshot) => {
 		snapshot.docs.forEach(doc => {
-			if (PlayerCount > doc.data().PlayerCount & InGame == false & PlayerNum > PlayerCount) // Player left matchmaking, and: Eg Player1 left so Player3 now Player2. Player2 now Player1.
+			let str = "";
+			Preparing = false;
+			
+			GameLoaded = doc.data().Began;
+			if (PlayerCount > doc.data().PlayerCount & GameLoaded == false & PlayerNum > PlayerCount) // Player left matchmaking, and: Eg Player1 left so Player3 now Player2. Player2 now Player1.
 			{
 				PlayerNum--;
-				PlayerID = `${Name.value}${PlayerNum}`;
+				PlayerID = `${MyName}${PlayerNum}`;
 			}
-			PlayerCount = doc.data().PlayerCount;
-			
+
 			PlayerPos = [];
-			let Objects = (doc.data().PlayerData).split('/');
-			// Each obj in Objects is a player data in csv form
-			for (let i = 0; i < 4; i++)
+			str = doc.data().PlayerData;
+			let Objects = str.split('/'); // Each obj is player data in csv form 
+			for (let i = 0; i < Objects.length; i++)
 			{
 				let Obj = Objects[i].split(',');
-				PlayerPos.push({X: parseInt(Obj[0]), Y: parseInt(Obj[1]), In: Obj[2]});
+				PlayerPos.push({X: parseInt(Obj[0]), Y: parseInt(Obj[1]), In: Obj[2], Name: Obj[3]});
 			}		
+			PlayerCount = doc.data().PlayerCount;
+			console.log("?" + doc.data().PlayerCount);
+			//console.log(PlayerCount);
 			
 			SpawnedImgs = [];
-			try {
-				Objects = (doc.data().SpawnedImgs).split('/');
-				// Each obj is a spawned image Type, X, Y, HW(The height and width)
-				for (let i = 0; i < 80; i++)
-				{
-					let Obj = Objects[i].split(',');
-					SpawnedImgs.push({Type: Obj[0], X: parseInt(Obj[1]), Y: parseInt(Obj[2]), HW: parseInt(Obj[3])});
-				}
+			str = doc.data().SpawnedImgs;
+			Objects = str.split('/');
+			for (let i = 0; i < Objects.length; i++)
+			{
+				if (Objects[i] == null) continue;
+				let Obj = Objects[i].split(',');
+				SpawnedImgs.push({Type: Obj[0], X: parseInt(Obj[1]), Y: parseInt(Obj[2]), HW: parseInt(Obj[3])});
 			}
-			catch{}
-				
-			// Reading here needs checking
+			
+			FiredWater = [];
+			str = doc.data().FiredWater;
+			if (str == "") return;
+			Objects = str.split('/');
+			console.log(Objects);
+			
+			
+			let length = 1;
 			try {
-				Objects = (doc.data().FiredWater).split('/');
-				for (let i = 0; i < Objects.length; i++)
-				{
-					let Obj = Objects[i].Split(',');
-					var WaterInfo = 
-					{Dmg: Obj[0], X: Obj[1], Y: Obj[2], TargetX: Obj[3], TargetY: Obj[4], Xgrad: Obj[5], Ygrad: Obj[6], Num: Obj[7]};
-				}
-	    	}
-			catch{};
+				Objects = str.split('/'); // If fails here, there is 1 water
+				length = Objects.length;
+			}
+			catch {length = 1}
+			for (let i = 0; i < length; i++)
+			{
+				let Obj = Objects[i].split(',');
+				FiredWater.push({Dmg: Obj[0], X: Obj[1], Y: Obj[2], TargetX: Obj[3], TargetY: Obj[4], Xgrad: Obj[5], Ygrad: Obj[6], Num: Obj[7]});
+			}
+			console.log(FiredWater);
+			console.log("Length: " + FiredWater.length);
 		})
 	})
 }
@@ -578,23 +593,25 @@ function Update(DataType) {
 	let CsvString = "";
     if (DataType == 'PlayerData')
 	{
-		for (let i = 0; i < 4; i++) // Return to csv layout
+		for (let i = 0; i < PlayerPos.length; i++) // Return to csv layout
 		{
-			CsvString = CsvString+`${PlayerPos[i].X},${PlayerPos[i].Y},${PlayerPos[i].In}/`;
+			CsvString = CsvString+`${PlayerPos[i].X},${PlayerPos[i].Y},${PlayerPos[i].In},${PlayerPos[i].Name}/`;
 		}
-		CsvString.slice(0, CsvString.length-1);
+		CsvString = CsvString.slice(0, -1);
 		db.collection('Game').doc('GameData').update({
 			"PlayerData": CsvString,
 			"PlayerCount": PlayerCount,
+			"Began": GameLoaded,
 		})
 	}
 	if (DataType == 'SpawnedImgs')
     {
-		for (let i = 0; i < SpawnedImgs.length-1; i++)
+		console.log(SpawnedImgs);
+		for (let i = 0; i < SpawnedImgs.length; i++)
 		{
 			CsvString = CsvString +`${SpawnedImgs[i].Type},${SpawnedImgs[i].X},${SpawnedImgs[i].Y},${SpawnedImgs[i].HW}/`;
 		}
-		CsvString = CsvString.slice(0, CsvString.length-1);
+		CsvString = CsvString.slice(0, -1);
 		db.collection('Game').doc('GameData').update({
 	    	"SpawnedImgs": CsvString,
 	    })
@@ -605,115 +622,94 @@ function Update(DataType) {
 		{
 			CsvString = CsvString+`${FiredWater[i].Dmg},${FiredWater[i].X},${FiredWater[i].Y},${FiredWater[i].TargetX},${FiredWater[i].TargetY},${FiredWater[i].Xgrad},${FiredWater[i].Ygrad},${FiredWater[i].Num}/`;
 		}
-		CsvString = CsvString.slice(0, CsvString.length-1);
+		CsvString = CsvString.slice(0, -1);
 		db.collection('Game').doc('GameData').update({
 			"FiredWater": CsvString,
 		})
 	}
 }
+	
 
-
-// OTHER FUNCTIONS
-function ControlsScreen() {alert(`Press 1/2/3/4 to use inventory, WASD to move, and F to pick up. The controls will be different if changed in settings. Click when holding a gear and within the black circle, but outside the red circle (if visible) to fire.`)}
-Controls.onclick = ControlsScreen;
-
-function GameEnded() { // Needs improving to work for when player leaves
-	if (Practice == false & InGame == true)
-	{
-		clearInterval(drawing);
-		drawing = setInterval(UpdateScreen, 50);
-		if (PlayerCount == 1) Placement.textContent = "You placed: 1st";
-		if (PlayerCount == 2) Placement.textContent = "You placed: 2nd";
-		if (PlayerCount == 3) Placement.textContent = "You placed: 3rd";
-		if (PlayerCount == 4) Placement.textContent = "You placed: 4th";
-	    Info.classList.add("hide");
-		PlayerPos[PlayerNum-1].In = "false";
-		InGame = false;
-		PlayerCount--;
-		if (PlayerCount == 0 & InGame == true) 
-		{
-			PlayerPos = [{X: 50, Y: 50, In: "true"}, {X: 2950, Y: 50, In: "true"}, {X: 50, Y: 2950, In: "true"}, {X: 2950, Y: 2950, In: "true"}];
-			Update("PlayerData");
-			FiredWater = [{Dmg: 0, X: -1000, Y: -1000, TargetX: 0, TargetY: 0, Xgrad: 0, Ygrad: 0, Num: 0}];
-			Update("FiredWater");
-			SpawnedImgs = [{Type: "Smoke", X: -1000, Y: -1000, HW: 0}];
-			Update("SpawnedImgs");
-		}
-	}
-	if (Practice == true) 
-	{
-		clearInterval(zonerun);
-		alert("You were eliminated");
-		location.reload();
-	}
-}
-
-function RemovePlayer() {
-	if (Practice == false & InGame == true)
-	{
-		PlayerCount--; // Using with >1 dreamweaver test in google causes matchmake issue
-		Update("PlayerData");
-	}
-}
-window.onbeforeunload = RemovePlayer;
-
+// Menu Options
+function ShowControls() {alert("Press 1/2/3/4 to use inventory, WASD to move, and F to pick up. The controls will be different if changed in settings")}
+Controls.onclick = ShowControls;
+	
 function HowToPlay() {
-	alert("Begin a match to be paired against 4 opponents. Click on a nearby gear, item, or healer to pick it up. Click to fire in that direction to eliminate opponents. The starting size is 3000px");
+	alert("Begin a match to be paired against 4 opponents. Click on a nearby gear, item, or healer to pick it up. Click when holding a gear and within the black circle, but outside the red circle (if visible) to fire to eliminate opponents. The starting size is 3000px.");
 	for (let i = 0; i < Zones.length; i++) // Made to be dynamic if adjustments to zones made
 	{
-		alert(`Zone ${i+1}: Shrinks to ${Zones[i].Sizing}px, taking ${Zones[i].Length}s to close. Deals ${Zones[i].Dmg}dmg per second`);
+		alert(`Zone ${i+1}: Shrinks to ${Zones[i].Sizing}px, taking ${Zones[i].Length}s to close. Deals ${Zones[i].Dmg}dmg per second.`);
 	}
 }
 HTP.onclick = HowToPlay;
-
-function KeyDown() {
-    Keys = (Keys || []);             // Copied.       https://www.w3schools.com/graphics/game_controllers.asp
 	
-	let key = event.key;
-    Keys[key.charCodeAt(0)] = true;       
-	Moving();              
-	Usage();
-}
-document.onkeydown = KeyDown;
-
-function KeyUp() {
-	let key = event.key;
-	Keys[key.charCodeAt(0)] = false;
-    
-}
-document.onkeyup = KeyUp;
-
-function ScreenCheck(x, y, Name, size) {
-	let xCoord = x - myX + World.width/2;
-	let yCoord = y - myY + World.height/2;
-	if (xCoord >= -(World.width) & xCoord <= World.width & yCoord >= -(World.height) & yCoord <= World.height)
-	{
-		if (Name != "NoDraw")
-		{
-			ctx.drawImage(Name, xCoord, yCoord, size, size);
-		}
-		return true;
-	}
-	return false;
-}
-
 function StartPractice() {
-		Practice = true;
-		PlayerCount = 1;
-		Menu.classList.add("hide");
-		PlayerID = 'Player1';
-		GameStart();
+	Practice = true;
+	PlayerCount = 1;
+	Menu.classList.add("hide");
+	PlayerID = 'Player1';
+	GameStart();
 }
 EnterPractice.onclick = StartPractice;
-
+	
 function ChangeScreen() {
-	Menu.classList.toggle("hide");
-	SettingScreen.classList.toggle("hide");
-	KeySequence = "";
+	if (window.event.target.id == "Back") // Exiting to Menu
+	{
+		Menu.classList.remove("hide");
+		if (SettingScreen.classList.contains("hide") == false) // Currently in Settings
+		{
+            SettingScreen.classList.add("hide");
+		}
+		if (AccountScreen.classList.contains("hide") == false) // Currently in Accounts
+		{
+			AccountScreen.classList.add("hide");
+			
+			// Dummy acc (temp)
+			MyName = "TempAcc";
+			EnterGame.textContent = "Multiplayer";
+		}
+		Back.classList.add("hide"); // Remove Back button
+		return;
+	}	
+	Back.classList.remove("hide"); 
+	Menu.classList.add("hide");
+	if (window.event.target.id == "Settings") // Enter settings
+	{
+		SettingScreen.classList.remove("hide");
+	}
+	if (window.event.target.id == "Accounts") // Enter accounts
+	{
+		AccountScreen.classList.remove("hide");
+	}
 }
 Settings.onclick = ChangeScreen;
 Back.onclick = ChangeScreen;
-
+Accounts.onclick = ChangeScreen;
+	
+function SignUpOrIn() {
+	alert("Not made yet");
+	return;
+	
+	if (window.event.target.id == "SignIn") 
+	{
+	    // Read all doc.data() field to check all accounts
+		// if username matches data username, check if password matches. if not, state wrong password. return.
+		
+		// if matches, MyName = Username
+		
+	}
+	if (window.event.target.id == "SignUp") 
+	{
+		// Read all doc.data() field to check all accounts
+		// if username matches data username, state already existing name. return.
+		
+		// add a new field with name (Username) and data being: (Password),0,00
+		// MyName=Username
+	}
+}
+SignIn.onclick = SignUpOrIn;
+SignUp.onclick = SignUpOrIn;
+	
 function ChangeBinds() {
 	let char = NewKey.value;
 	char = char.toLowerCase();
@@ -750,3 +746,86 @@ function ChangeBinds() {
 	}
 }
 change.onclick = ChangeBinds;
+	
+	
+// OTHER FUNCTIONS
+function GameEnded() {
+	if (Practice == false & InGame == true)
+	{
+		clearInterval(drawing);
+		drawing = setInterval(UpdateScreen, 50);
+		if (PlayerCount == 1) Placement.textContent = "You placed: 1st";
+		if (PlayerCount == 2) Placement.textContent = "You placed: 2nd";
+		if (PlayerCount == 3) Placement.textContent = "You placed: 3rd";
+		if (PlayerCount >= 4) Placement.textContent = `You placed: ${PlayerCount}th`;
+	    Info.classList.add("hide");
+		PlayerPos[PlayerNum-1].In = "false";
+		InGame = false;
+		PlayerCount--;
+		if (PlayerCount == 0 & InGame == true) 
+		{
+			PlayerPos = [{X: 50, Y: 50, In: "true", Name: "Name"}, {X: 2950, Y: 50, In: "true", Name: "Name"}, {X: 50, Y: 2950, In: "true", Name: "Name"}, {X: 2950, Y: 2950, In: "true", Name: "Name"}];
+			Update("PlayerData");
+		}
+	}
+	if (Practice == true) 
+	{
+		clearInterval(zonerun);
+		alert("You were eliminated");
+		location.reload();
+	}
+}
+
+function RemovePlayer() {
+	if (Practice == false)
+	{
+		PlayerCount--; // Using with >1 dreamweaver test in google causes matchmake issue
+		// Add 1 to games played and adjust the average placement
+        PlayerPos[PlayerNum-1].X = 50;
+		if (PlayerNum == 2 | PlayerNum == 4) PlayerPos[PlayerNum-1].X = 2950;
+		PlayerPos[PlayerNum-1].Y = 50;
+		if (PlayerNum > 2) PlayerPos[PlayerNum-1].Y = 2950;
+		PlayerPos[PlayerNum-1].In = true;
+		PlayerPos[PlayerNum-1].Name = "Name";
+		Update("PlayerData");
+	}
+}
+window.onbeforeunload = RemovePlayer;
+
+function KeyDown() {
+    Keys = (Keys || []);             // Copied.       https://www.w3schools.com/graphics/game_controllers.asp
+	
+	let key = event.key;
+    Keys[key.charCodeAt(0)] = true;       
+	Moving();              
+	Usage();
+}
+document.onkeydown = KeyDown;
+
+function KeyUp() {
+	let key = event.key;
+	Keys[key.charCodeAt(0)] = false;  
+}
+document.onkeyup = KeyUp;
+
+function ScreenCheck(x, y, Name, size) {
+	let xCoord = x - myX + World.width/2;
+	let yCoord = y - myY + World.height/2;
+	if (xCoord >= -(World.width) & xCoord <= World.width & yCoord >= -(World.height) & yCoord <= World.height)
+	{
+		if (Name != "NoDraw") ctx.drawImage(Name, xCoord, yCoord, size, size);
+		return true;
+	}
+	return false;
+}
+	
+function CollideCheck(X1, X2, Y1, Y2, Length1, Length2) {
+	if (X1+Length1 > X2 & X1 < X2+Length2) // Any point on the two images have same x
+	{
+		if (Y1+Length1 > Y2 & Y1 < Y2+Length2) // Point also had the same y (Collides)
+		{
+			return true;
+		}
+	}
+	return false;
+}
