@@ -48,6 +48,7 @@ var GearList = [
 	{Type: "WaterBalloon", FireDelay: 1.3, Range: 500, MinRange: 250, Dmg: 95},
 ]
 // The above objects can be easily adjusted or have a new item added by providing an image, and adding new object
+
 var Inventory = ["", "", "", ""];
 var Keys = [];
 var KeyBinds = [119, 97, 100, 115, "f", "1", "2", "3", "4"];
@@ -56,7 +57,7 @@ var checking, zonerun, drawing, PlayerID, Speed = 5, HP = 100, Shield = 0, Eleme
 var InGame = false, InHeal = false, HeldImg='', CurrentSlot = -1;
 var myX, myY, FireTime=0, HealTime=0;
 var TheZone = {TopX: 0, TopY: 0, BottomX: 3000, BottomY: 3000, Time: Zones[0].Length, Shrink: 3000-Zones[0].Sizing, CurrentZone: 1}; // Same for everyone, so doesn't need to be in firebase
-var MultiplayerDelay = 0, Preparing = true;
+var MultiplayerDelay = 0;
 
 var GameImgs = [];
 var ImgNames = ["Orange", "Red", "Water", "Eliminated", "Rock", "Bush"];
@@ -112,57 +113,52 @@ function GameGeneration() {
 function GameStart() {
 	if (Practice == true) PlayerPos = [{X: 50, Y: 50, In: "true", Name: ""}, {X: 2950, Y: 50, In: "true", Name: ""}, {X: 50, Y: 2950, In: "true", Name: ""}, {X: 2950, Y: 2950, In: "true", Name: ""}];
 	if (Practice == false) Read();
-	if (Preparing == false)
+	if (GameLoaded == true & EnteredGame == false | PlayerCount == 4 & EnteredGame == false)
 	{
-		console.log(PlayerCount);
-		if (GameLoaded == true & EnteredGame == false | PlayerCount == 4)
+		clearInterval(checking);
+		alert("Game already started. Try again later.");
+		return;
+	}
+	Menu.classList.add("hide");
+	Load.classList.remove("hide");
+	if (EnteredGame == false & Practice == false)
+	{
+		PlayerPos[PlayerCount].Name = MyName;
+		PlayerCount++;
+		PlayerID = `${MyName}${PlayerCount}`;
+		PlayerNum = PlayerCount;
+		Update("PlayerData");
+		EnteredGame = true;
+	}
+	LoadPlayer.textContent = `Loading, ${PlayerCount}/4 Players`;
+	YourId.textContent = `ID: ${PlayerID}`;
+	
+	if (PlayerCount == 4 | Practice == true)
+	{		
+		clearInterval(checking);
+		for (let i = 0; i < ImgNames.length; i++)
 		{
-			clearInterval(checking);
-			alert("too many");
-			return;
+			let TempImg = new Image();
+			TempImg.src = `https://WtrWar.github.io/${ImgNames[i]}.png`;
+			GameImgs.push(TempImg);
 		}
-		Menu.classList.add("hide");
-		Load.classList.remove("hide");
-
-		if (EnteredGame == false & Practice == false)
-		{
-			PlayerPos[PlayerCount].Name = MyName;
-			PlayerCount++;
-			PlayerID = `${MyName}${PlayerCount}`;
-			PlayerNum = PlayerCount;
-			Update("PlayerData");
-			EnteredGame = true;
-		}
-		LoadPlayer.textContent = `Loading, ${PlayerCount}/4 Players`;
-		YourId.textContent = `ID: ${PlayerID}`;
-
-		if (PlayerCount == 4 | Practice == true)
-		{		
-			clearInterval(checking);
-			for (let i = 0; i < ImgNames.length; i++)
+		if (PlayerNum == 4 | Practice == true) 
+	    {
+			SpawnedImgs = [];
+			GameGeneration();
+			if (Practice == false) // adapts if a player leaves
 			{
-				let TempImg = new Image();
-				TempImg.src = `https://WtrWar.github.io/${ImgNames[i]}.png`;
-				GameImgs.push(TempImg);
+				GameLoaded = true;
+				Update("PlayerData");
+				Update("SpawnedImgs");
 			}
-			if (PlayerNum == 4 | Practice == true) 
-			{
-				GameGeneration();
-				if (Practice == false) // adapts if a player leaves
-				{
-					GameLoaded = true;
-					Update("PlayerData");
-					SpawnedImgs = [];
-					Update("SpawnedImgs");
-				}
-			}
-			InGame = true;
-			Load.classList.add("hide");
-			Game.classList.remove("hide");
-			Info.classList.remove("hide");
-			zonerun = setInterval(ZoneSystem, 1000);
-			drawing = setInterval(UpdateScreen, 25); // 40FPS (Saves on Firebase Reading, but still playable)
 		}
+		InGame = true;
+		Load.classList.add("hide");
+		Game.classList.remove("hide");
+		Info.classList.remove("hide");
+		zonerun = setInterval(ZoneSystem, 1000);
+		drawing = setInterval(UpdateScreen, 25); // 40FPS (Saves on Firebase Reading, but still playable)
 	}
 }
 
@@ -257,7 +253,6 @@ function Moving() {
 	if (PlayerPos[PlayerNum-1].X < 0) PlayerPos[PlayerNum-1].X = 0;
 	if (PlayerPos[PlayerNum-1].Y > 3000) PlayerPos[PlayerNum-1].Y = 3000;
 	if (PlayerPos[PlayerNum-1].Y < 0) PlayerPos[PlayerNum-1].Y = 0;
-	if (Practice == false) Update("PlayerData");
 }
 
 function PickUp() {
@@ -351,132 +346,126 @@ EnterGame.onclick = MatchMake;
 function UpdateScreen() {
 	if (Practice == false) 
 	{
-		// MultiplayerDelay++;
-		if (MultiplayerDelay == 4) // 10fps update
+		MultiplayerDelay++;
+		if (MultiplayerDelay%4 == 0) 
 		{
-			Read();
-			MultiplayerDelay = 0;
+			Update("PlayerData"); // Reduce the running from Moving()
+			Read(); 
 		}
 	}
-	if (Read() == true)
+	if (HealTime > 0)
 	{
-		if (HealTime > 0)
-		{
-			HealInfo.textContent = `${Math.ceil(HealTime)}s`;
-			HealTime -= (1/35);
+		HealInfo.textContent = `${Math.ceil(HealTime)}s`;
+		HealTime -= (1/35);
+	}
+	if (HealTime <= 0) HealInfo.textContent = "";
+
+	myX = PlayerPos[PlayerNum-1].X;
+	myY = PlayerPos[PlayerNum-1].Y;
+
+	let topx = TheZone.TopX - myX + World.width/2;
+	let topy = TheZone.TopY - myY + World.height/2;
+	let bottomx = TheZone.BottomX - myX + World.width/2;
+	let dist = bottomx-topx; // changing when player moves
+
+	ctx.fillStyle = "blue";
+	ctx.fillRect(0, 0, World.width, World.height);
+	ctx.fillStyle = "lightgreen";
+	ctx.fillRect(topx, topy, dist, dist);
+
+	if (Practice == false)
+	{
+		for (let i = 1; i < PlayerPos.length+1; i++) // make Opponents appear (Be red)
+		{	
+			if (i == PlayerNum) continue;
+			if (PlayerPos[i-1].In == "false") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, GameImgs[3], 40);
+			if (PlayerPos[i-1].In == "true") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, GameImgs[1], 40)
 		}
-		if (HealTime <= 0) HealInfo.textContent = "";
+	}
+	if (PlayerPos[PlayerNum-1].In == "false") ctx.drawImage(GameImgs[3], World.width/2, World.height/2, 40, 40);
+	if (PlayerPos[PlayerNum-1].In == "true") ctx.drawImage(GameImgs[0], World.width/2, World.height/2, 40, 40);
 
-		myX = PlayerPos[PlayerNum-1].X;
-		myY = PlayerPos[PlayerNum-1].Y;
-
-		let topx = TheZone.TopX - myX + World.width/2;
-		let topy = TheZone.TopY - myY + World.height/2;
-		let bottomx = TheZone.BottomX - myX + World.width/2;
-		let dist = bottomx-topx; // changing when player moves
-
-		ctx.fillStyle = "blue";
-		ctx.fillRect(0, 0, World.width, World.height);
-		ctx.fillStyle = "lightgreen";
-		ctx.fillRect(topx, topy, dist, dist);
-
-		if (Practice == false)
+	for (let i = 0; i < SpawnedImgs.length; i++) // Rocks, items etc
+	{
+		let x = SpawnedImgs[i].X;
+		let y = SpawnedImgs[i].Y;
+		for (let j = 0; j < GameImgs.length; j++)
 		{
-			for (let i = 1; i < PlayerPos.length+1; i++) // make Opponents appear (Be red)
-			{	
-				if (i == PlayerNum) continue;
-				if (PlayerPos[i-1].In == "false") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, GameImgs[3], 40);
-				if (PlayerPos[i-1].In == "true") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, GameImgs[1], 40)
+			if (SpawnedImgs[i].Type == ImgNames[j]) // ImgNames and GameImgs Parallel
+			{
+				ScreenCheck(SpawnedImgs[i].X, SpawnedImgs[i].Y, GameImgs[j], SpawnedImgs[i].HW);
 			}
 		}
-		if (PlayerPos[PlayerNum-1].In == "false") ctx.drawImage(GameImgs[3], World.width/2, World.height/2, 40, 40);
-		if (PlayerPos[PlayerNum-1].In == "true") ctx.drawImage(GameImgs[0], World.width/2, World.height/2, 40, 40);
+	}
 
-		for (let i = 0; i < SpawnedImgs.length; i++) // Rocks, items etc
+	for (let i = 0; i < GearList.length; i++)
+	{
+		if (Inventory[CurrentSlot-1] == GearList[i].Type & HeldImg != null)
 		{
-			let x = SpawnedImgs[i].X;
-			let y = SpawnedImgs[i].Y;
-			for (let j = 0; j < GameImgs.length; j++)
+			ctx.setLineDash([8, 15]);
+			ctx.beginPath();
+			ctx.arc(World.width/2, World.height/2, GearList[i].Range, 0, 2*Math.PI);
+			ctx.strokeStyle = "black";
+			ctx.stroke();
+			ctx.beginPath();
+			ctx.arc(World.width/2, World.height/2, GearList[i].MinRange, 0, 2*Math.PI);
+			ctx.strokeStyle = "red";
+			ctx.stroke();
+		}
+	}
+
+	FireTime += (1/60);	
+	console.log("Length: " + FiredWater.length);
+	for (let i = 0; i < FiredWater.length; i++) // Make fired waters appear. Not read by PlayerNum != PlayerCount
+	{
+		if (PlayerNum == PlayerCount)
+		{
+			FiredWater[i].X = FiredWater[i].X + FiredWater[i].Xgrad;
+			FiredWater[i].Y = FiredWater[i].Y + FiredWater[i].Ygrad;
+		}
+		if (FiredWater[i].Num != PlayerNum)
+		{
+			if (CollideCheck(PlayerPos[PlayerNum-1].X, FiredWater[i].X, PlayerPos[PlayerNum-1].Y, FiredWater[i].Y, 40, 30) == true & InGame == true)
 			{
-				if (SpawnedImgs[i].Type == ImgNames[j]) // ImgNames and GameImgs Parallel
+				Shield -= FiredWater[i].Dmg;
+				if (Shield < 0)
 				{
-					ScreenCheck(SpawnedImgs[i].X, SpawnedImgs[i].Y, GameImgs[j], SpawnedImgs[i].HW);
+					HP += Shield; // If Shield became -30, now HP loses 30, Shield is now 0
+					Shield = 0;
 				}
+				if (HP <= 0) 
+				{ 
+					PlayerPos[PlayerNum-1].In = "false";
+					SpectateName.textContent = `Spectating: ${PlayerPos[num-1].Name}`;
+					PlayerNum = FiredWater[i].Num; // Spectate the eliminator
+					GameEnded();
+				}
+				FiredWater.splice(i, 1);
+				if (Practice == false) Update("FiredWater");
 			}
 		}
 
-		for (let i = 0; i < GearList.length; i++)
+		if (PlayerNum == PlayerCount)
 		{
-			if (Inventory[CurrentSlot-1] == GearList[i].Type & HeldImg != null)
+			for (let j = 0; j < SpawnedImgs.length; j++)
 			{
-				ctx.setLineDash([8, 15]);
-				ctx.beginPath();
-				ctx.arc(World.width/2, World.height/2, GearList[i].Range, 0, 2*Math.PI);
-				ctx.strokeStyle = "black";
-				ctx.stroke();
-				ctx.beginPath();
-				ctx.arc(World.width/2, World.height/2, GearList[i].MinRange, 0, 2*Math.PI);
-				ctx.strokeStyle = "red";
-				ctx.stroke();
-			}
-		}
-
-		FireTime += (1/60);	
-		console.log(FiredWater.length);
-		for (let i = 0; i < FiredWater.length; i++) // Make fired waters appear. Not read by PlayerNum != PlayerCount
-		{
-			if (PlayerNum == PlayerCount)
-			{
-				FiredWater[i].X = FiredWater[i].X + FiredWater[i].Xgrad;
-				FiredWater[i].Y = FiredWater[i].Y + FiredWater[i].Ygrad;
-			}
-
-			if (FiredWater[i].Num == PlayerNum)
-			{
-				if (CollideCheck(PlayerPos[PlayerNum-1].X, FiredWater[i].X, PlayerPos[PlayerNum-1].Y, FiredWater[i].Y, 40, 30) == true & InGame == true)
+				if (SpawnedImgs[j].Type == "Rock")
 				{
-					Shield -= FiredWater[i].Dmg;
-					if (Shield < 0)
+					if (CollideCheck(FiredWater[i].X, SpawnedImgs[j].X, FiredWater[i].Y, SpawnedImgs[j].Y, 30, 90) == true)
 					{
-						HP -= (Shield*-1);
-						Shield = 0;
+						FiredWater.splice(i, 1);
 					}
-					if (HP <= 0) 
-					{ 
-						PlayerPos[PlayerNum-1].In = "false";
-						let num = FiredWater[i].Num; // grabs the eliminator player num
-						SpectateName.textContent = `Spectating: ${PlayerPos[num-1].Name}`;
-						PlayerNum = FiredWater[i].Num; // Spectate the eliminator
-						GameEnded();
-					}
-					FiredWater.splice(i, 1);
-					if (Practice == false) Update("FiredWater");
 				}
 			}
-
-			if (PlayerNum == PlayerCount)
+			if (CollideCheck(FiredWater[i].X, FiredWater[i].TargetX, FiredWater[i].Y, FiredWater[i].TargetY, 5, 5) == true)
 			{
-				for (let j = 0; j < SpawnedImgs.length; j++)
-				{
-					if (SpawnedImgs[j].Type == "Rock")
-					{
-						if (CollideCheck(FiredWater[i].X, SpawnedImgs[j].X, FiredWater[i].Y, SpawnedImgs[j].Y, 30, 90) == true)
-						{
-							FiredWater.splice(i, 1);
-						}
-					}
-				}
-				if (CollideCheck(FiredWater[i].X, FiredWater[i].TargetX, FiredWater[i].Y, FiredWater[i].TargetY, 5, 5) == true)
-				{
-					FiredWater.splice(i, 1);
-				}
+				FiredWater.splice(i, 1);
 			}
-			console.log("Make appear"); // Only running for PlayerNum == PlayerCount
-			ScreenCheck(FiredWater[i].X, FiredWater[i].Y, GameImgs[2], 30);
 		}
-		Players.textContent = `${PlayerCount} players`;
+		ScreenCheck(FiredWater[i].X, FiredWater[i].Y, GameImgs[2], 30);
 		if (PlayerNum == PlayerCount & Practice == false) Update("FiredWater");
 	}
+	Players.textContent = `${PlayerCount} players`;
 } 
 
 function ZoneSystem() {	
@@ -536,7 +525,6 @@ function Read() {
 	db.collection('Game').get().then((snapshot) => {
 		snapshot.docs.forEach(doc => {
 			let str = "";
-			Preparing = false;
 			
 			GameLoaded = doc.data().Began;
 			if (PlayerCount > doc.data().PlayerCount & GameLoaded == false & PlayerNum > PlayerCount) // Player left matchmaking, and: Eg Player1 left so Player3 now Player2. Player2 now Player1.
@@ -545,17 +533,21 @@ function Read() {
 				PlayerID = `${MyName}${PlayerNum}`;
 			}
 
+			let mine = {X: PlayerPos[PlayerNum-1].X, Y: PlayerPos[PlayerNum-1].Y, In: PlayerPos[PlayerNum-1].In, Name: PlayerPos[PlayerNum-1].Name};
 			PlayerPos = [];
 			str = doc.data().PlayerData;
 			let Objects = str.split('/'); // Each obj is player data in csv form 
 			for (let i = 0; i < Objects.length; i++)
 			{
+				if (i == PlayerNum-1) // Making player location update less frequent than other reading causes the position to be incorrect. By saving the position this issue does not occur and saves reading/update amount
+				{
+					PlayerPos.push({X: mine.X, Y: mine.Y, In: mine.In, Name: Mine.Name});
+					continue;
+				}
 				let Obj = Objects[i].split(',');
 				PlayerPos.push({X: parseInt(Obj[0]), Y: parseInt(Obj[1]), In: Obj[2], Name: Obj[3]});
 			}		
 			PlayerCount = doc.data().PlayerCount;
-			console.log("?" + doc.data().PlayerCount);
-			//console.log(PlayerCount);
 			
 			SpawnedImgs = [];
 			str = doc.data().SpawnedImgs;
@@ -566,27 +558,16 @@ function Read() {
 				let Obj = Objects[i].split(',');
 				SpawnedImgs.push({Type: Obj[0], X: parseInt(Obj[1]), Y: parseInt(Obj[2]), HW: parseInt(Obj[3])});
 			}
-			
+
 			FiredWater = [];
 			str = doc.data().FiredWater;
-			if (str == "") return;
 			Objects = str.split('/');
-			console.log(Objects);
-			
-			
-			let length = 1;
-			try {
-				Objects = str.split('/'); // If fails here, there is 1 water
-				length = Objects.length;
-			}
-			catch {length = 1}
-			for (let i = 0; i < length; i++)
+            if (str == "") return;
+			for (let i = 0; i < Objects.length; i++)
 			{
 				let Obj = Objects[i].split(',');
-				FiredWater.push({Dmg: Obj[0], X: Obj[1], Y: Obj[2], TargetX: Obj[3], TargetY: Obj[4], Xgrad: Obj[5], Ygrad: Obj[6], Num: Obj[7]});
+				FiredWater.push({Dmg: Obj[0], X: parseInt(Obj[1]), Y: parseInt(Obj[2]), TargetX: Obj[3], TargetY: Obj[4], Xgrad: Obj[5], Ygrad: Obj[6], Num: Obj[7]});
 			}
-			console.log(FiredWater);
-			console.log("Length: " + FiredWater.length);
 		})
 	})
 }
@@ -608,7 +589,6 @@ function Update(DataType) {
 	}
 	if (DataType == 'SpawnedImgs')
     {
-		console.log(SpawnedImgs);
 		for (let i = 0; i < SpawnedImgs.length; i++)
 		{
 			CsvString = CsvString +`${SpawnedImgs[i].Type},${SpawnedImgs[i].X},${SpawnedImgs[i].Y},${SpawnedImgs[i].HW}/`;
@@ -624,6 +604,7 @@ function Update(DataType) {
 		{
 			CsvString = CsvString+`${FiredWater[i].Dmg},${FiredWater[i].X},${FiredWater[i].Y},${FiredWater[i].TargetX},${FiredWater[i].TargetY},${FiredWater[i].Xgrad},${FiredWater[i].Ygrad},${FiredWater[i].Num}/`;
 		}
+		
 		CsvString = CsvString.slice(0, -1);
 		db.collection('Game').doc('GameData').update({
 			"FiredWater": CsvString,
@@ -831,3 +812,5 @@ function CollideCheck(X1, X2, Y1, Y2, Length1, Length2) {
 	}
 	return false;
 }
+
+Read();
