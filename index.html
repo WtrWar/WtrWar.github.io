@@ -6,11 +6,12 @@
 	<title>game</title>
 </head>
 <body id="Page">
+	
 	<div id="Menu">
-	  <h1 class="maintitle">game</h1><br>
-	  <input id="Name" type="text" value="EnterName" autocomplete="off"/><br><br><br><br>
-	  <button id="EnterGame">Multiplayer</button><br><br>
+	  <h1 class="maintitle">game</h1><br><br>
+	  <button id="EnterGame">Sign in to play</button><br><br>
 	  <button id="EnterPractice">Practice</button><br><br><br>
+	  <button id="Accounts">Sign in/Sign up</button><br><br>
 	  <button id="HTP">How to play</button><br><br>
 	  <button id="Controls">Controls</button><br><br>
 	  <button id="Settings">Settings</button>
@@ -59,15 +60,29 @@
 	</div>
 	
 	<div id="SettingScreen" class="hide">
-	  <h1>Settings</h1>
-	  <button id="Back">Back</button><br><br><br>
-	  <h3>Change controls: </h4>
-		
+	  <h1>Settings</h1><br><br><br>
+	  
+	  <h3>Change controls:</h4>
 	  <h4 id="KeyToChange">Press Move Up key</h4>
 	  <input id="NewKey" type="text" autocomplete="off">
 	  <button id="change">Change</button>
 		
 	</div>
+	
+	<div id="AccountScreen" class="hide">
+		<h1>Accounts</h1>
+		<h5>Back will create a Dummy Acc (temp)</h5>
+		<h3>Sign in</h3>
+	    <input id="Name" type="text" value="MyUsername" autocomplete="off"/><br><br>
+		<input id="Pass" type="text" value="MyPassword" autocomplete="off"/><br><br>
+		<button id="SignIn">Sign in</button><br><br><br>
+		<h3>Make account</h3>
+		<input id="NameMake" type="text" value="Username" autocomplete="off"/><br><br>
+		<input id="PassMake" type="text" value="Password" autocomplete="off"/><br><br>
+		<button id="SignUp">Sign up</button><br><br>
+		<h4>An account will store: Total Games Played, Total Wins, Average placement. Not Keybinds</h4>
+	</div>
+	<button id="Back" class="hide">Back</button><br><br><br>
 	
 	
 	<script src="https://www.gstatic.com/firebasejs/8.2.0/firebase-app.js"></script>

@@ -5,6 +5,10 @@
 	overflow: hidden;
 	background-color: lightcyan;
 }
+#Back {
+	width: 80px;
+	height: 50px;
+}
 #EndScreen {
 	position: fixed;
 	top: 5px;
@@ -26,9 +30,17 @@
 	position: fixed;
 	text-align: center;
 	left: 540px;
-	height: 400px;
+	height: 450px;
 	width: 200px;
 	background-color: aqua;
+}
+#AccountScreen {
+	position: fixed;
+	text-align: center;
+	left: 490px;
+	height: auto;
+	width: 300px;
+	background-color: cadetblue;
 }
 #Load {
 	position: fixed;
@@ -37,6 +49,14 @@
 	height: auto;
 	width: 200px;
 	background-color: orange;
+}
+#SettingScreen {
+	position: fixed;
+	text-align: center;
+	left: 390px;
+	height: 80%;
+	width: 500px;
+	background-color: grey;
 }
 #GameHP {
   background: rgba(185,193,54,0.6);
@@ -95,6 +115,10 @@
 .fired {
 	z-index: 5;
 	position: fixed;
+}
+.pulsate {
+	height: 45px;
+	width: 90px;
 }
 .hide {
 	visibility: hidden;
