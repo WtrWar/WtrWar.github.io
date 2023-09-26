@@ -1,10 +1,9 @@
 // Multiplayer:
-// If a player leaves in MatchMake, such as player 2, then player 3 ID becomes 2 and Player4 ID becomes 3. Otherwise there could be 2 player 3s
-// CsvString of PlayerData sometimes missing player 1's name or not resetting positions
+// CsvString removes Player1 name from data when matchmaking (May be fixed)
+// Locations and In not being reset upon death (May be fixed)
+// Water was being updated, but location not often (When In=false may stop you from updating your position?)
+// Account sign up improvement
 
-// Suggestions:
-// Cancelling healing
- 
 // To add:
 // less movement speed when diagonal
 // Non square player/enemy, rotating based on mouse angle
@@ -147,6 +146,18 @@ function GameStart() {
 			GameGeneration();
 			if (Practice == false) // adapts if a player leaves
 			{
+				PlayerPos[0].X = 50;
+				PlayerPos[0].Y = 50;
+				PlayerPos[0].In = "true";
+				PlayerPos[1].X = 2950;
+				PlayerPos[1].Y = 50;
+				PlayerPos[1].In = "true";
+				PlayerPos[2].X = 50;
+				PlayerPos[2].Y = 2950;
+				PlayerPos[2].In = "true";
+				PlayerPos[3].X = 2950;
+				PlayerPos[3].Y = 2950;
+				PlayerPos[3].In = "true";
 				GameLoaded = true;
 				Update("PlayerData");
 				Update("SpawnedImgs");
@@ -669,64 +680,33 @@ Back.onclick = ChangeScreen;
 Accounts.onclick = ChangeScreen;
 	
 function SignUpOrIn() {	
-	if (window.event.target.id == "SignIn") 
-	{
-		let Properties = [];
-		db.collection('Game').get().then((snapshot) => {
-			snapshot.docs.forEach(doc => {
-				for (var Property in doc.data())
-				{
-					Properties.push(Property);
-				}
-			})
-		})
-		let User = Name.value;
-		let Password = Pass.value;
-		setTimeout(function() {
-			for (let i = 0; i < Properties.length; i++)
+	db.collection('Game').get().then((snapshot) => {
+		snapshot.docs.forEach(doc => {
+			if (doc.id == User)
 			{
-				if (Property == Name)
+				if (window.event.target.id == "SignIn")
 				{
-					let Obj = doc.data().split(',');
-					if (Password == Obj[0]) 
-					{
-						alert("Successful sign in");
-						MyName = doc.id;
-						return;
-					}
+					setTimeout(function() {
+						let Obj = doc.data().split(',');
+						if (Obj[0] == Password)
+						{
+							myName = doc.id;
+							alert("Successful sign in");
+							return;
+						}
+				    })
 				}
-			}
-	    }, 500)
-		
-	}
-	if (window.event.target.id == "SignUp")
-	{
-		let Properties = [];
-		db.collection('Game').get().then((snapshot) => {
-			snapshot.docs.forEach(doc => {
-				for (var Property in doc.data())
+				if (window.event.target.id == "SignUp")
 				{
-					Properties.push(Property);
-				}
-			})
-		})
-		let User = NameMake.value;
-		let Password = PassMake.value;
-		console.log(Properties.length);
-		setTimeout (function() { // sign up
-			for (let i = 0; i < Properties.length; i++)
-			{
-				if (Properties[i] == Name) 
-				{
-					alert("Account already has same name");
+					alert("Account exists already");
 					return;
 				}
 			}
-			// Add the account
-			MyName = Name;
-			alert("Successful sign up");
-		}, 500);
-	}
+		})
+	})
+	// Add account
+	myName = User;
+	alert("Account made");
 }
 SignIn.onclick = SignUpOrIn;
 SignUp.onclick = SignUpOrIn;
@@ -773,8 +753,6 @@ change.onclick = ChangeBinds;
 function GameEnded() {
 	if (Practice == false & InGame == true)
 	{
-		clearInterval(drawing);
-		drawing = setInterval(UpdateScreen, 50);
 		if (PlayerCount == 1) Placement.textContent = "You placed: 1st";
 		if (PlayerCount == 2) Placement.textContent = "You placed: 2nd";
 		if (PlayerCount == 3) Placement.textContent = "You placed: 3rd";
@@ -805,12 +783,6 @@ function RemovePlayer() {
 	{
 		PlayerCount--; // Using with >1 dreamweaver test in google causes matchmake issue
 		// Add 1 to games played and adjust the average placement
-        PlayerPos[PlayerNum-1].X = 50;
-		if (PlayerNum == 2 | PlayerNum == 4) PlayerPos[PlayerNum-1].X = 2950;
-		PlayerPos[PlayerNum-1].Y = 50;
-		if (PlayerNum > 2) PlayerPos[PlayerNum-1].Y = 2950;
-		PlayerPos[PlayerNum-1].In = true;
-		PlayerPos[PlayerNum-1].Name = "Name";
 		Update("PlayerData");
 	}
 }
