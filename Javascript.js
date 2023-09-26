@@ -1,7 +1,6 @@
 // Multiplayer:
 // If a player leaves in MatchMake, such as player 2, then player 3 ID becomes 2 and Player4 ID becomes 3. Otherwise there could be 2 player 3s
-// Can't see fired water. 
-// Leaving a game reducing playercount needs checking (May be just because of 2 dreamweaver ran tabs) 
+// CsvString of PlayerData sometimes missing player 1's name or not resetting positions
 
 // Suggestions:
 // Cancelling healing
@@ -541,7 +540,7 @@ function Read() {
 			{
 				if (i == PlayerNum-1) // Making player location update less frequent than other reading causes the position to be incorrect. By saving the position this issue does not occur and saves reading/update amount
 				{
-					PlayerPos.push({X: mine.X, Y: mine.Y, In: mine.In, Name: Mine.Name});
+					PlayerPos.push({X: mine.X, Y: mine.Y, In: mine.In, Name: mine.Name});
 					continue;
 				}
 				let Obj = Objects[i].split(',');
@@ -566,7 +565,7 @@ function Read() {
 			for (let i = 0; i < Objects.length; i++)
 			{
 				let Obj = Objects[i].split(',');
-				FiredWater.push({Dmg: Obj[0], X: parseInt(Obj[1]), Y: parseInt(Obj[2]), TargetX: Obj[3], TargetY: Obj[4], Xgrad: Obj[5], Ygrad: Obj[6], Num: Obj[7]});
+				FiredWater.push({Dmg: parseInt(Obj[0]), X: parseInt(Obj[1]), Y: parseInt(Obj[2]), TargetX: parseInt(Obj[3]), TargetY: parseInt(Obj[4]), Xgrad: parseInt(Obj[5]), Ygrad: parseInt(Obj[6]), Num: parseInt(Obj[7])});
 			}
 		})
 	})
@@ -611,8 +610,8 @@ function Update(DataType) {
 		})
 	}
 }
-	
 
+	
 // Menu Options
 function ShowControls() {alert("Press 1/2/3/4 to use inventory, WASD to move, and F to pick up. The controls will be different if changed in settings")}
 Controls.onclick = ShowControls;
@@ -669,25 +668,64 @@ Settings.onclick = ChangeScreen;
 Back.onclick = ChangeScreen;
 Accounts.onclick = ChangeScreen;
 	
-function SignUpOrIn() {
-	alert("Not made yet");
-	return;
-	
+function SignUpOrIn() {	
 	if (window.event.target.id == "SignIn") 
 	{
-	    // Read all doc.data() field to check all accounts
-		// if username matches data username, check if password matches. if not, state wrong password. return.
-		
-		// if matches, MyName = Username
+		let Properties = [];
+		db.collection('Game').get().then((snapshot) => {
+			snapshot.docs.forEach(doc => {
+				for (var Property in doc.data())
+				{
+					Properties.push(Property);
+				}
+			})
+		})
+		let User = Name.value;
+		let Password = Pass.value;
+		setTimeout(function() {
+			for (let i = 0; i < Properties.length; i++)
+			{
+				if (Property == Name)
+				{
+					let Obj = doc.data().split(',');
+					if (Password == Obj[0]) 
+					{
+						alert("Successful sign in");
+						MyName = doc.id;
+						return;
+					}
+				}
+			}
+	    }, 500)
 		
 	}
-	if (window.event.target.id == "SignUp") 
+	if (window.event.target.id == "SignUp")
 	{
-		// Read all doc.data() field to check all accounts
-		// if username matches data username, state already existing name. return.
-		
-		// add a new field with name (Username) and data being: (Password),0,00
-		// MyName=Username
+		let Properties = [];
+		db.collection('Game').get().then((snapshot) => {
+			snapshot.docs.forEach(doc => {
+				for (var Property in doc.data())
+				{
+					Properties.push(Property);
+				}
+			})
+		})
+		let User = NameMake.value;
+		let Password = PassMake.value;
+		console.log(Properties.length);
+		setTimeout (function() { // sign up
+			for (let i = 0; i < Properties.length; i++)
+			{
+				if (Properties[i] == Name) 
+				{
+					alert("Account already has same name");
+					return;
+				}
+			}
+			// Add the account
+			MyName = Name;
+			alert("Successful sign up");
+		}, 500);
 	}
 }
 SignIn.onclick = SignUpOrIn;
@@ -748,7 +786,10 @@ function GameEnded() {
 		if (PlayerCount == 0 & InGame == true) 
 		{
 			PlayerPos = [{X: 50, Y: 50, In: "true", Name: "Name"}, {X: 2950, Y: 50, In: "true", Name: "Name"}, {X: 50, Y: 2950, In: "true", Name: "Name"}, {X: 2950, Y: 2950, In: "true", Name: "Name"}];
+			GameLoaded = false;
 			Update("PlayerData");
+			FiredWater = [];
+			Update("FiredWater");
 		}
 	}
 	if (Practice == true) 
@@ -813,4 +854,9 @@ function CollideCheck(X1, X2, Y1, Y2, Length1, Length2) {
 	return false;
 }
 
-Read();
+if (navigator.onLine == true) Read();
+if (navigator.onLine == false) {
+	EnterGame.classList.add("hide");
+	Accounts.classList.add("hide");
+	alert("You are not connected to the internet. To play Multiplayer, reconnect and reload page");
+}
