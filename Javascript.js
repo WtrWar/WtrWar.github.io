@@ -24,12 +24,12 @@ const db = firebase.firestore();
 
 // PERSONAL VARIABLES
 var Zones = [
-	{Length: 15, Sizing: 2600, Dmg: 5}, 
-	{Length: 25, Sizing: 1800, Dmg: 8}, 									
-	{Length: 35, Sizing: 1600, Dmg: 12},
-	{Length: 35, Sizing: 1200, Dmg: 20},
-	{Length: 25, Sizing: 900, Dmg: 25}, 
-	{Length: 15, Sizing: 0, Dmg: 30},   
+	{Length: 15, Sizing: 2600, Dmg: 0}, 
+	{Length: 25, Sizing: 1800, Dmg: 0}, 									
+	{Length: 35, Sizing: 1600, Dmg: 0},
+	{Length: 35, Sizing: 1200, Dmg: 0},
+	{Length: 25, Sizing: 900, Dmg: 0}, 
+	{Length: 15, Sizing: 0, Dmg: 0},   
 ];
 var ItemList = [
 	{Type: "Umbrella", Duration: 3500},
