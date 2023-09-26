@@ -682,6 +682,16 @@ Back.onclick = ChangeScreen;
 Accounts.onclick = ChangeScreen;
 	
 function SignUpOrIn() {	
+	if (window.event.target.id == "SignIn")
+	{
+		let User = Name.value;
+		let Password = Pass.value;
+	}
+	if (window.event.target.id == "SignUp")
+	{
+		let User = NameMake.value;
+		let Password = PassMake.value;
+	}
 	db.collection('Game').get().then((snapshot) => {
 		snapshot.docs.forEach(doc => {
 			if (doc.id == User)
