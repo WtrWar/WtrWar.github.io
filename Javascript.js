@@ -161,6 +161,8 @@ function GameStart() {
 				GameLoaded = true;
 				Update("PlayerData");
 				Update("SpawnedImgs");
+				FiredWater = [];//[{Dmg: 0, X:-1000, Y:-1000, TargetX: 0, TargetY: 0, Xgrad: 0, Ygrad: 0, Num: 1}]; // Dummy data so the Update function will run. Will not impact the game and only appears for first frame
+				Update("FiredWater");
 			}
 		}
 		InGame = true;
