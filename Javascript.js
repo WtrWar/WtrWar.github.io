@@ -1,8 +1,9 @@
-// Multiplayer:
-// Record stat changes, and display
-
-// To add:
+// To do 
+// Record and display stat changes
 // Spectating
+// Matchmaking playcount and Began aren't updating
+// Remove items and increase gear, obstacles and heals
+
 const firebaseConfig = {
 	apiKey: "AIzaSyAG48CZGZb0KwGGA0s8lZKRG3xTDpOrL4Q",
 	authDomain: "external-project-server.firebaseapp.com",
@@ -24,7 +25,7 @@ var Zones = [
 	{Length: 35, Sizing: 1200, Dmg: 15},
 	{Length: 25, Sizing: 900, Dmg: 20}, 
 	{Length: 15, Sizing: 0, Dmg: 25},   
-];
+]
 var HealerList = [
 	{Type: "Coat", ShieldHeal: 25, Heal: 0, Duration: 2500},
 	{Type: "Towel", ShieldHeal: 0, Heal: 50, Duration: 4000},
@@ -57,13 +58,13 @@ var ctx = World.getContext("2d");
 
 // MULTIPLAYER/WORLD VARIABLES
 var SpawnedImgs = [], FiredWater = [], PlayerPos = [{X: 50, Y: 50, In: "true", Name: ""}, {X: 2950, Y: 50, In: "true", Name: ""}, {X: 50, Y: 2950, In: "true", Name: ""}, {X: 2950, Y: 2950, In: "true", Name: ""}];
-var EnteredGame = false, PlayerCount = 1, Practice = false, GameLoaded = false;
-var myData = {Name: "", TotGames: 0, TotWins: 0, AvgPlace: 0};
+var EnteredGame = false, PlayerCount = 1, Practice, GameLoaded = false;
+var MyData = {Name: "a", TotGames: 0, TotWins: 0, AvgPlace: 0};
 
 
 // GAME LOAD FUNCTIONS
 function GameGeneration() {
-	for (var i = 0; i < 85; i++) // 25 gear, 25 Healers, 25 rocks, 10 bushes
+	for (var i = 0; i < 100; i++) // 25 Gear, 25 Healers, 30 rocks, 20 bushes
 	{
 		if (i < 50)
 		{
@@ -72,8 +73,8 @@ function GameGeneration() {
 			var Rand = Math.round(Math.random()*(TempList.length-1));
 		    var Selection = TempList[Rand].Type;
 		}
-		if (i >= 50 & i < 75) var Selection = "Rock";
-		if (i >= 75) var Selection = "Bush";
+		if (i >= 50 & i < 80) var Selection = "Rock";
+		if (i >= 80) var Selection = "Bush";
 		var Xcoord = (Math.ceil(Math.random()*28))*100;
 		var Ycoord = (Math.ceil(Math.random()*28))*100;
 		
@@ -118,7 +119,6 @@ function GameStart() {
 		EnteredGame = true;
 	}
 	LoadPlayer.textContent = `Loading, ${PlayerCount}/4 Players`;
-	YourId.textContent = `ID: ${PlayerID}`;
 	
 	if (PlayerCount == 4 | Practice == true)
 	{		
@@ -134,9 +134,9 @@ function GameStart() {
 			SpawnedImgs = [];
 			GameGeneration();
 			Update("SpawnedImgs");
+			InGame = true;
+			Update("PlayerData");
 		}
-		InGame = true;
-		Update("PlayerData");
 		Load.classList.add("hide");
 		Game.classList.remove("hide");
 		Info.classList.remove("hide");
@@ -481,7 +481,10 @@ function ZoneSystem() {
 		{
 			PlayerPos[PlayerNum-1].In = "false";
 			// Grab random number 1-4, and check if same as PlayerNum. If not, PlayerNum = RandomNumber, if so, repeat again. (spectating a random player)
+			let num = Math.ceil(Math.random()*4);
+			while (num == PlayerNum) num = Math.ceil(Math.random()*4);
 			GameEnded();
+			PlayerNum = num;
 		}
 	}
 	if (TheZone.Time == 0)
@@ -505,6 +508,7 @@ function ZoneSystem() {
 function Read() {
 	db.collection('Game').get().then((snapshot) => {
 		snapshot.docs.forEach(doc => {
+			console.log(PlayerPos);
 			let str = "";
 			
 			GameLoaded = doc.data().Began;
@@ -520,7 +524,7 @@ function Read() {
 			let Objects = str.split('/'); // Each obj is player data in csv form 
 			for (let i = 0; i < Objects.length; i++)
 			{
-				if (i == PlayerNum-1) // Making player location update less frequent than other reading causes the position to be incorrect. By saving the position this issue does not occur and saves reading/update amount
+				if (i == PlayerNum-1 & Practice == false) // Making player location update less frequent than other reading causes the position to be incorrect. By saving the position this issue does not occur and saves reading/update amount
 				{
 					PlayerPos.push({X: mine.X, Y: mine.Y, In: mine.In, Name: mine.Name});
 					continue;
@@ -549,6 +553,7 @@ function Read() {
 				let Obj = Objects[i].split(',');
 				FiredWater.push({Dmg: parseInt(Obj[0]), X: parseInt(Obj[1]), Y: parseInt(Obj[2]), TargetX: parseInt(Obj[3]), TargetY: parseInt(Obj[4]), Xgrad: parseInt(Obj[5]), Ygrad: parseInt(Obj[6]), Num: parseInt(Obj[7])});
 			}
+			console.log(PlayerPos);
 		})
 	})
 }
@@ -593,7 +598,6 @@ function Update(DataType) {
 	}
 	if (DataType == "MyAcc")
 	{
-		let points = MyD
 		db.collection('Accounts').doc(MyData.Name).update({
 			"TotGame": MyData.TotGames,
 			"TotWins": MyData.TotWins,
@@ -608,7 +612,7 @@ function ShowControls() {alert("Press 1/2/3/4 to use inventory, WASD to move, an
 Controls.onclick = ShowControls;
 	
 function HowToPlay() {
-	alert("Begin a match to be paired against 4 opponents. Click on a nearby gear, item, or healer to pick it up. Click when holding a gear and within the black circle, but outside the red circle (if visible) to fire to eliminate opponents. The starting size is 3000px.");
+	alert("Begin a match to be paired against 4 opponents. Click on a nearby gear or healer to pick it up. Click when holding a gear and within the black circle, but outside the red circle (if visible) to fire to eliminate opponents. The starting size is 3000px.");
 	for (let i = 0; i < Zones.length; i++) // Made to be dynamic if adjustments to zones made
 	{
 		alert(`Zone ${i+1}: Shrinks to ${Zones[i].Sizing}px, taking ${Zones[i].Length}s to close. Deals ${Zones[i].Dmg}dmg per second.`);
