@@ -2,7 +2,6 @@
 // Record stat changes, and display
 
 // To add:
-// Items
 // Spectating
 const firebaseConfig = {
 	apiKey: "AIzaSyAG48CZGZb0KwGGA0s8lZKRG3xTDpOrL4Q",
@@ -25,11 +24,6 @@ var Zones = [
 	{Length: 35, Sizing: 1200, Dmg: 15},
 	{Length: 25, Sizing: 900, Dmg: 20}, 
 	{Length: 15, Sizing: 0, Dmg: 25},   
-];
-var ItemList = [
-	{Type: "Umbrella", Duration: 3500},
-	{Type: "Smoke", Duration: 6000},
-	{Type: "Speed", Duration: 4000},
 ];
 var HealerList = [
 	{Type: "Coat", ShieldHeal: 25, Heal: 0, Duration: 2500},
@@ -56,7 +50,6 @@ var MultiplayerDelay = 0;
 var GameImgs = [];
 var ImgNames = ["Orange", "Red", "Water", "Eliminated", "Rock", "Bush"];
 for (let i = 0; i < GearList.length; i++) ImgNames.push(GearList[i].Type);
-for (let i = 0; i < ItemList.length; i++) ImgNames.push(ItemList[i].Type);
 for (let i = 0; i < HealerList.length; i++)	ImgNames.push(HealerList[i].Type);
 
 var Minimap = WorldMap.getContext("2d");
@@ -70,17 +63,16 @@ var myData = {Name: "", TotGames: 0, TotWins: 0, AvgPlace: 0};
 
 // GAME LOAD FUNCTIONS
 function GameGeneration() {
-	for (var i = 0; i < 85; i++) // 20 Gear, 15 items, 20 Healers, 20 rocks, 10 bushes
+	for (var i = 0; i < 85; i++) // 25 gear, 25 Healers, 25 rocks, 10 bushes
 	{
-		if (i < 55)
+		if (i < 50)
 		{
-			if (i < 20) var TempList = GearList;
-			if (i >= 20 & i < 35) var TempList = ItemList;
-			if (i >= 35) var TempList = HealerList;
+			if (i < 25) var TempList = GearList;
+			if (i >= 25) var TempList = HealerList;
 			var Rand = Math.round(Math.random()*(TempList.length-1));
 		    var Selection = TempList[Rand].Type;
 		}
-		if (i >= 55 & i < 75) var Selection = "Rock";
+		if (i >= 50 & i < 75) var Selection = "Rock";
 		if (i >= 75) var Selection = "Bush";
 		var Xcoord = (Math.ceil(Math.random()*28))*100;
 		var Ycoord = (Math.ceil(Math.random()*28))*100;
@@ -318,7 +310,6 @@ function Usage() {
 		HealInfo.textContent = `${HealTime}s`;
 		setTimeout(Heal, HealerList[ElementNum].Duration);
 	}
-	// Items (Just use if statements and not a new function as each item is very different)
 }
 document.onkeypress = Usage;
 
