@@ -1,13 +1,9 @@
 // Multiplayer:
-// CsvString removes Player1 name from data when matchmaking (May be fixed)
-// Locations and In not being reset upon death (May be fixed)
-// Water was being updated, but location not often (When In=false may stop you from updating your position?)
-// Account sign up improvement
+// Record stat changes, and display
 
 // To add:
-// less movement speed when diagonal
-// Non square player/enemy, rotating based on mouse angle
-
+// Items
+// Spectating
 const firebaseConfig = {
 	apiKey: "AIzaSyAG48CZGZb0KwGGA0s8lZKRG3xTDpOrL4Q",
 	authDomain: "external-project-server.firebaseapp.com",
@@ -23,12 +19,12 @@ const db = firebase.firestore();
 
 // PERSONAL VARIABLES
 var Zones = [
-	{Length: 15, Sizing: 2600, Dmg: 0}, 
-	{Length: 25, Sizing: 1800, Dmg: 0}, 									
-	{Length: 35, Sizing: 1600, Dmg: 0},
-	{Length: 35, Sizing: 1200, Dmg: 0},
-	{Length: 25, Sizing: 900, Dmg: 0}, 
-	{Length: 15, Sizing: 0, Dmg: 0},   
+	{Length: 15, Sizing: 2600, Dmg: 5}, 
+	{Length: 25, Sizing: 1800, Dmg: 8}, 									
+	{Length: 35, Sizing: 1600, Dmg: 12},
+	{Length: 35, Sizing: 1200, Dmg: 15},
+	{Length: 25, Sizing: 900, Dmg: 20}, 
+	{Length: 15, Sizing: 0, Dmg: 25},   
 ];
 var ItemList = [
 	{Type: "Umbrella", Duration: 3500},
@@ -67,8 +63,9 @@ var Minimap = WorldMap.getContext("2d");
 var ctx = World.getContext("2d");
 
 // MULTIPLAYER/WORLD VARIABLES
-var SpawnedImgs = [], FiredWater = [], PlayerPos = [{X: 50, Y: 50, In: "true", Name: ""}, {X: 2950, Y: 50, In: "true", Name: ""}, {X: 50, Y: 2950, In: "true", Name: ""}, {X: 2950, Y: 2950, In: "true", Name: ""}];;
-var EnteredGame = false, PlayerCount = 1, Practice = false, GameLoaded = false, MyName="";
+var SpawnedImgs = [], FiredWater = [], PlayerPos = [{X: 50, Y: 50, In: "true", Name: ""}, {X: 2950, Y: 50, In: "true", Name: ""}, {X: 50, Y: 2950, In: "true", Name: ""}, {X: 2950, Y: 2950, In: "true", Name: ""}];
+var EnteredGame = false, PlayerCount = 1, Practice = false, GameLoaded = false;
+var myData = {Name: "", TotGames: 0, TotWins: 0, AvgPlace: 0};
 
 
 // GAME LOAD FUNCTIONS
@@ -121,9 +118,9 @@ function GameStart() {
 	Load.classList.remove("hide");
 	if (EnteredGame == false & Practice == false)
 	{
-		PlayerPos[PlayerCount].Name = MyName;
+		PlayerPos[PlayerCount].Name = MyData.Name;
 		PlayerCount++;
-		PlayerID = `${MyName}${PlayerCount}`;
+		PlayerID = `${MyData.Name}${PlayerCount}`;
 		PlayerNum = PlayerCount;
 		Update("PlayerData");
 		EnteredGame = true;
@@ -144,28 +141,10 @@ function GameStart() {
 	    {
 			SpawnedImgs = [];
 			GameGeneration();
-			if (Practice == false) // adapts if a player leaves
-			{
-				PlayerPos[0].X = 50;
-				PlayerPos[0].Y = 50;
-				PlayerPos[0].In = "true";
-				PlayerPos[1].X = 2950;
-				PlayerPos[1].Y = 50;
-				PlayerPos[1].In = "true";
-				PlayerPos[2].X = 50;
-				PlayerPos[2].Y = 2950;
-				PlayerPos[2].In = "true";
-				PlayerPos[3].X = 2950;
-				PlayerPos[3].Y = 2950;
-				PlayerPos[3].In = "true";
-				GameLoaded = true;
-				Update("PlayerData");
-				Update("SpawnedImgs");
-				FiredWater = [];//[{Dmg: 0, X:-1000, Y:-1000, TargetX: 0, TargetY: 0, Xgrad: 0, Ygrad: 0, Num: 1}]; // Dummy data so the Update function will run. Will not impact the game and only appears for first frame
-				Update("FiredWater");
-			}
+			Update("SpawnedImgs");
 		}
 		InGame = true;
+		Update("PlayerData");
 		Load.classList.add("hide");
 		Game.classList.remove("hide");
 		Info.classList.remove("hide");
@@ -209,7 +188,7 @@ function Fire() {
 			if (Practice == false) Update("FiredWater");
 		}
 	}	
- }
+}
 World.onmousedown = Fire;
 
 function Heal() {
@@ -346,7 +325,7 @@ document.onkeypress = Usage;
 
 // MULTIPLAYER FUNCTIONS
 function MatchMake() {
-	if (MyName == "") 
+	if (MyData.Name == "") 
 	{
 		alert("Create or sign into an account to play Multiplayer");
 		return;
@@ -384,7 +363,7 @@ function UpdateScreen() {
 	ctx.fillRect(0, 0, World.width, World.height);
 	ctx.fillStyle = "lightgreen";
 	ctx.fillRect(topx, topy, dist, dist);
-
+	
 	if (Practice == false)
 	{
 		for (let i = 1; i < PlayerPos.length+1; i++) // make Opponents appear (Be red)
@@ -427,7 +406,6 @@ function UpdateScreen() {
 	}
 
 	FireTime += (1/60);	
-	console.log("Length: " + FiredWater.length);
 	for (let i = 0; i < FiredWater.length; i++) // Make fired waters appear. Not read by PlayerNum != PlayerCount
 	{
 		if (PlayerNum == PlayerCount)
@@ -469,7 +447,7 @@ function UpdateScreen() {
 					}
 				}
 			}
-			if (CollideCheck(FiredWater[i].X, FiredWater[i].TargetX, FiredWater[i].Y, FiredWater[i].TargetY, 5, 5) == true)
+			if (CollideCheck(FiredWater[i].X, FiredWater[i].TargetX, FiredWater[i].Y, FiredWater[i].TargetY, 8, 8) == true)
 			{
 				FiredWater.splice(i, 1);
 			}
@@ -479,7 +457,7 @@ function UpdateScreen() {
 	}
 	Players.textContent = `${PlayerCount} players`;
 } 
-
+	
 function ZoneSystem() {	
 	TheZone.Time -= 1;
 	let CurrentZone = TheZone.CurrentZone;
@@ -542,7 +520,7 @@ function Read() {
 			if (PlayerCount > doc.data().PlayerCount & GameLoaded == false & PlayerNum > PlayerCount) // Player left matchmaking, and: Eg Player1 left so Player3 now Player2. Player2 now Player1.
 			{
 				PlayerNum--;
-				PlayerID = `${MyName}${PlayerNum}`;
+				PlayerID = `${MyData.Name}${PlayerNum}`;
 			}
 
 			let mine = {X: PlayerPos[PlayerNum-1].X, Y: PlayerPos[PlayerNum-1].Y, In: PlayerPos[PlayerNum-1].In, Name: PlayerPos[PlayerNum-1].Name};
@@ -622,6 +600,15 @@ function Update(DataType) {
 			"FiredWater": CsvString,
 		})
 	}
+	if (DataType == "MyAcc")
+	{
+		let points = MyD
+		db.collection('Accounts').doc(MyData.Name).update({
+			"TotGame": MyData.TotGames,
+			"TotWins": MyData.TotWins,
+			"AvgPlace": MyData.AvgPlace,
+		})
+	}
 }
 
 	
@@ -658,10 +645,6 @@ function ChangeScreen() {
 		if (AccountScreen.classList.contains("hide") == false) // Currently in Accounts
 		{
 			AccountScreen.classList.add("hide");
-			
-			// Dummy acc (temp)
-			MyName = "TempAcc";
-			EnterGame.textContent = "Multiplayer";
 		}
 		Back.classList.add("hide"); // Remove Back button
 		return;
@@ -682,47 +665,66 @@ Back.onclick = ChangeScreen;
 Accounts.onclick = ChangeScreen;
 	
 function SignUpOrIn() {	
-	if (window.event.target.id == "SignIn")
-	{
-		let User = Name.value;
-		let Password = Pass.value;
-	}
+	var Data;
+	if (window.event.target.id == "SignIn") var SignIn = "true"; 
 	if (window.event.target.id == "SignUp")
 	{
-		let User = NameMake.value;
-		let Password = PassMake.value;
+		let Name = NameMake.value, Pass = PassMake.value;
+		if (Name.length >= 4 & Name.length <= 12 & Pass.length >= 4 & Pass.length <= 12)
+		{
+			var SignIn = "false";
+			if (Name == "Username" | Pass == "Password") var SignIn = "fail";
+		}
+		else var SignIn = "fail";
 	}
-	db.collection('Game').get().then((snapshot) => {
+	db.collection('Accounts').get().then((snapshot) => {
 		snapshot.docs.forEach(doc => {
-			if (doc.id == User)
+			if (SignIn == "true" & doc.id == Name.value | SignIn == "false" & doc.id == NameMake.value) // If trying to sign in, grab information of desired account. If trying to make account, check try to grab data of it to see if it does exist
 			{
-				if (window.event.target.id == "SignIn")
-				{
-					setTimeout(function() {
-						let Obj = doc.data().split(',');
-						if (Obj[0] == Password)
-						{
-							myName = doc.id;
-							alert("Successful sign in");
-							return;
-						}
-				    })
-				}
-				if (window.event.target.id == "SignUp")
-				{
-					alert("Account exists already");
-					return;
-				}
+				Data = doc.data(); // Grabs password and other info as object. Makes sign in or up simpler
 			}
 		})
 	})
-	// Add account
-	myName = User;
-	alert("Account made");
+	if (SignIn == "fail") return;
+	if (SignIn == "true") 
+	{
+		setTimeout(function() {
+			
+			if (Data == null | Data.Password != Pass.value) // No matching username
+			{
+				alert("Wrong username/password");
+				return;
+			}
+			alert("Successful sign in");
+			MyData = {Name: Name.value, TotGames: Data.TotGame, TotWins: Data.TotWin, AvgPlace: Data.AvgPlace}; // Grabs the data from firebase to update when game ends
+			ShowName.textContent = `Signed into: ${MyData.Name}`;
+			EnterGame.textContent = "Multiplayer";
+		}, 500)
+	}
+	if (SignIn == "false")
+	{
+		setTimeout(function() {
+			if (Data != null) // Exists
+			{
+				alert("An account already has same name");
+				return;
+			}
+			db.collection('Accounts').doc(NameMake.value).set({
+			    Password: PassMake.value,
+			    TotGame: 0,
+			    TotWin: 0,
+				AvgPlace: 0,
+		    })
+			alert("Account made");
+			MyData = {Name: Name.value, TotGames: 0, TotWins: 0, AvgPlace: 0}; // Grabs the data from firebase to update when game ends
+			ShowName.textContent = `Signed into: ${MyData.Name}`;
+			EnterGame.textContent = "Multiplayer";
+	    }, 500)
+	}
 }
 SignIn.onclick = SignUpOrIn;
 SignUp.onclick = SignUpOrIn;
-	
+
 function ChangeBinds() {
 	let char = NewKey.value;
 	char = char.toLowerCase();
@@ -731,14 +733,14 @@ function ChangeBinds() {
 	if (ChangingKeys[9] == 0) 
 	{
 		Back.classList.add("hide");
-		KeyBinds = ['', '', '', '', '', '', '', '', '']; // To track if keybinds are repeated
+		KeyBinds = ['', '', '', '', '', '', '', '', '']; // To reset the current binds so these can be reset by 
 		ChangingKeys[9] = 0;
 	}
 	let num = ChangingKeys[9];
 	for (let i = 0; i < KeyBinds.length-1; i++)
 	{
 		if (char == KeyBinds[i] | char.charCodeAt(0) == KeyBinds[i]) // Already binded
-	     {
+	    {
 			alert("Already a used key");
 			return;
 		}
@@ -759,7 +761,7 @@ function ChangeBinds() {
 	}
 }
 change.onclick = ChangeBinds;
-	
+
 	
 // OTHER FUNCTIONS
 function GameEnded() {
@@ -769,20 +771,31 @@ function GameEnded() {
 		if (PlayerCount == 2) Placement.textContent = "You placed: 2nd";
 		if (PlayerCount == 3) Placement.textContent = "You placed: 3rd";
 		if (PlayerCount >= 4) Placement.textContent = `You placed: ${PlayerCount}th`;
+		let points = MyData.AvgPlace*MyData.TotGames;
+		points += PlayerCount;
+		MyData.TotGames++;
+		MyData.AvgPlace = points/MyData.TotGames;
+		if (PlayerCount == 1) MyData.TotWins++;
+			
 	    Info.classList.add("hide");
 		PlayerPos[PlayerNum-1].In = "false";
 		InGame = false;
 		PlayerCount--;
-		if (PlayerCount == 0 & InGame == true) 
+		if (PlayerCount > 0) Update("PlayerData");
+		if (PlayerCount == 0) 
 		{
-			PlayerPos = [{X: 50, Y: 50, In: "true", Name: "Name"}, {X: 2950, Y: 50, In: "true", Name: "Name"}, {X: 50, Y: 2950, In: "true", Name: "Name"}, {X: 2950, Y: 2950, In: "true", Name: "Name"}];
-			GameLoaded = false;
-			Update("PlayerData");
-			FiredWater = [];
-			Update("FiredWater");
+			Practice = true; // This prevents the game from reading/writing anymore like a practice game
+			db.collection('Game').doc('GameData').update({
+				"Began": false,
+				"FiredWater": "",
+				"SpawnedImgs": "",
+				"PlayerData": "50,50,true,Name/2950,50,true,Name/50,2950,true,Name/2950,2950,true,Name",
+				"PlayerCount": 0,
+			})
 		}
+		Update("MyAcc");
 	}
-	if (Practice == true) 
+	else if (Practice == true) 
 	{
 		clearInterval(zonerun);
 		alert("You were eliminated");
@@ -795,11 +808,16 @@ function RemovePlayer() {
 	{
 		PlayerCount--; // Using with >1 dreamweaver test in google causes matchmake issue
 		// Add 1 to games played and adjust the average placement
+		let points = MyData.AvgPlace*MyData.TotGames;
+		points += PlayerCount;
+		MyData.TotGames++;
+		MyData.AvgPlace = points/MyData.TotGames;
+		Update("MyAcc");
 		Update("PlayerData");
 	}
 }
 window.onbeforeunload = RemovePlayer;
-
+	
 function KeyDown() {
     Keys = (Keys || []);             // Copied.       https://www.w3schools.com/graphics/game_controllers.asp
 	
@@ -837,10 +855,9 @@ function CollideCheck(X1, X2, Y1, Y2, Length1, Length2) {
 	}
 	return false;
 }
-
+	
 if (navigator.onLine == true) Read();
 if (navigator.onLine == false) {
-	EnterGame.classList.add("hide");
-	Accounts.classList.add("hide");
-	alert("You are not connected to the internet. To play Multiplayer, reconnect and reload page");
+	alert("Not connected to the internet. Reconnect first and reload page.");
+	Menu.classList.add("hide");
 }

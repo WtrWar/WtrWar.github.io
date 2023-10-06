@@ -3,18 +3,21 @@
 <head>
 	<meta charset="utf-8">
 	<link rel="stylesheet" href="Styling.css">
-	<title>game</title>
+	<title>Water war</title>
 </head>
 <body id="Page">
 	
 	<div id="Menu">
-	  <h1 class="maintitle">game</h1><br><br>
+	  <h1 class="maintitle">Water war</h1><br><br>
 	  <button id="EnterGame">Sign in to play</button><br><br>
 	  <button id="EnterPractice">Practice</button><br><br><br>
 	  <button id="Accounts">Sign in/Sign up</button><br><br>
 	  <button id="HTP">How to play</button><br><br>
 	  <button id="Controls">Controls</button><br><br>
-	  <button id="Settings">Settings</button>
+	  <button id="Settings">Settings</button><br><br><br>
+	  <h3 id="ShowGames"></h3>
+	  <h3 id="ShowWins"></h3>
+	  <h3 id="ShowPlace"></h3>
 	</div>
 		
 	<div id="Load" class="hide">
@@ -71,7 +74,7 @@
 	
 	<div id="AccountScreen" class="hide">
 		<h1>Accounts</h1>
-		<h5>Back will create a Dummy Acc (temp)</h5>
+		<h5 id="ShowName">Signed into: </h5>
 		<h3>Sign in</h3>
 	    <input id="Name" type="text" value="MyUsername" autocomplete="off"/><br><br>
 		<input id="Pass" type="text" value="MyPassword" autocomplete="off"/><br><br>
@@ -89,7 +92,6 @@
 	<script src="https://www.gstatic.com/firebasejs/8.1.2/firebase-firestore.js"></script>
 	<script type="module">
 	    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js';
-		import { getAuth } from 'https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js';
 	</script>
 	
 <script src="Javascript.js"></script>	
