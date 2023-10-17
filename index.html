@@ -8,7 +8,7 @@
 <body id="Page">
 	
 	<div id="Menu">
-	  <h1 class="maintitle">Water war</h1><br><br>
+	  <h1 class="maintitle">game</h1><br><br>
 	  <button id="EnterGame">Sign in to play</button><br><br>
 	  <button id="EnterPractice">Practice</button><br><br><br>
 	  <button id="Accounts">Sign in/Sign up</button><br><br>
@@ -22,7 +22,6 @@
 		
 	<div id="Load" class="hide">
 	  <h2 id="LoadPlayer">Loading, 0/4 Players</h2>
-	  <h3 id="YourId">___</h3>
 	  <h3>Make sure Caps Lock is turned off</h3>
 	  <h3>If the game says there are 0 players, then the game has been used too much today, and try again tomorrow.</h3>
 	</div>
@@ -45,10 +44,10 @@
 	  </div>
 		
 	  <div id="GameItems">
-		<img id="Held1" src="GearSquare.png" alt="Tile1" class="Held" onclick="EmptyInventory()">
-		<img id="Held2" src="GearSquare.png" alt="Tile2" class="Held" onclick="EmptyInventory()">
-		<img id="Held3" src="GearSquare.png" alt="Tile3" class="Held" onclick="EmptyInventory()">
-		<img id="Held4" src="GearSquare.png" alt="Tile4" class="Held" onclick="EmptyInventory()">
+		<img id="Held1" src="https://WtrWar.github.io/GearSquare.png" alt="Tile1" class="Held" onclick="EmptyInventory()">
+		<img id="Held2" src="https://WtrWar.github.io/GearSquare.png" alt="Tile2" class="Held" onclick="EmptyInventory()">
+		<img id="Held3" src="https://WtrWar.github.io/GearSquare.png" alt="Tile3" class="Held" onclick="EmptyInventory()">
+		<img id="Held4" src="https://WtrWar.github.io/GearSquare.png" alt="Tile4" class="Held" onclick="EmptyInventory()">
 		<h3 id="HealInfo"></h3>
 	  </div> 
 		
@@ -58,18 +57,15 @@
 
 	<div id="EndScreen">
 	  <h2 id="Placement"></h2>
-		
       <h3 id="SpectateName"></h3>
 	</div>
 	
 	<div id="SettingScreen" class="hide">
 	  <h1>Settings</h1><br><br><br>
-	  
 	  <h3>Change controls:</h4>
 	  <h4 id="KeyToChange">Press Move Up key</h4>
 	  <input id="NewKey" type="text" autocomplete="off">
-	  <button id="change">Change</button>
-		
+	  <button id="change">Change</button>	
 	</div>
 	
 	<div id="AccountScreen" class="hide">
@@ -85,7 +81,7 @@
 		<button id="SignUp">Sign up</button><br><br>
 		<h4>An account will store: Total Games Played, Total Wins, Average placement. Not Keybinds</h4>
 	</div>
-	<button id="Back" class="hide">Back</button><br><br><br>
+	<button id="Back" class="hide">Back</button>
 	
 	
 	<script src="https://www.gstatic.com/firebasejs/8.2.0/firebase-app.js"></script>
@@ -97,4 +93,3 @@
 <script src="Javascript.js"></script>	
 </body>
 </html>
-

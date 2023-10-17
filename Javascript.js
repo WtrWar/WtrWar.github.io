@@ -1,8 +1,7 @@
-// To do 
-// Record and display stat changes
-// Spectating
-// Matchmaking playcount and Began aren't updating
-// Remove items and increase gear, obstacles and heals
+// Features list:
+
+// Zone (Simple adjust/add), Firing & Display range (Simple adjust/add), Healing & Display time (Simple adjust/add), Movement, Pick up in-game items, Menu & Page system, Change keybinds, Spectating others, Account & Stat tracking, Multiplayer opponents
+
 
 const firebaseConfig = {
 	apiKey: "AIzaSyAG48CZGZb0KwGGA0s8lZKRG3xTDpOrL4Q",
@@ -36,18 +35,19 @@ var GearList = [
 	{Type: "WaterGun", FireDelay: 0.5, Range: 450, MinRange: 0, Dmg: 19},
 	{Type: "WaterBalloon", FireDelay: 1.3, Range: 500, MinRange: 250, Dmg: 95},
 ]
-// The above objects can be easily adjusted or have a new item added by providing an image, and adding new object
+// The above object list can be easily adjusted or have a new item added by providing an image, and adding new object into the lust.
 
 var Inventory = ["", "", "", ""];
 var Keys = [];
 var KeyBinds = [119, 97, 100, 115, "f", "1", "2", "3", "4"];
 var ChangingKeys = ["Move Up", "Move Left", "Move Right", "Move Down", "Pick Up", "Use Slot 1", "Use Slot 2", "Use Slot 3", "Use Slot 4", 0];
-var checking, zonerun, drawing, PlayerID, Speed = 5, HP = 100, Shield = 0, ElementNum, PlayerNum=1;
+var checking, zonerun, drawing, Speed = 5, HP = 100, Shield = 0, ElementNum, PlayerNum=1;
 var InGame = false, InHeal = false, HeldImg='', CurrentSlot = -1;
 var myX, myY, FireTime=0, HealTime=0;
 var TheZone = {TopX: 0, TopY: 0, BottomX: 3000, BottomY: 3000, Time: Zones[0].Length, Shrink: 3000-Zones[0].Sizing, CurrentZone: 1}; // Same for everyone, so doesn't need to be in firebase
 var MultiplayerDelay = 0;
 
+// To contain the name of each image type in the game for fast access
 var GameImgs = [];
 var ImgNames = ["Orange", "Red", "Water", "Eliminated", "Rock", "Bush"];
 for (let i = 0; i < GearList.length; i++) ImgNames.push(GearList[i].Type);
@@ -58,23 +58,25 @@ var ctx = World.getContext("2d");
 
 // MULTIPLAYER/WORLD VARIABLES
 var SpawnedImgs = [], FiredWater = [], PlayerPos = [{X: 50, Y: 50, In: "true", Name: ""}, {X: 2950, Y: 50, In: "true", Name: ""}, {X: 50, Y: 2950, In: "true", Name: ""}, {X: 2950, Y: 2950, In: "true", Name: ""}];
-var EnteredGame = false, PlayerCount = 1, Practice, GameLoaded = false;
-var MyData = {Name: "a", TotGames: 0, TotWins: 0, AvgPlace: 0};
+var EnteredGame = false, PlayerCount = 1, Practice = false, GameLoaded = false, MyData;
 
 
 // GAME LOAD FUNCTIONS
 function GameGeneration() {
 	for (var i = 0; i < 100; i++) // 25 Gear, 25 Healers, 30 rocks, 20 bushes
 	{
-		if (i < 50)
+		if (i < 50) // If placing a gear or healer
 		{
+			// Because for Gear and Healers, one is randomly chosen from multiple options in the list. To do this, a TempList is used to grab the object list
 			if (i < 25) var TempList = GearList;
 			if (i >= 25) var TempList = HealerList;
+			// Then the length of the TempList is used to generate a random number, and this number will grab the information of the chosen element in TempList
 			var Rand = Math.round(Math.random()*(TempList.length-1));
 		    var Selection = TempList[Rand].Type;
 		}
 		if (i >= 50 & i < 80) var Selection = "Rock";
 		if (i >= 80) var Selection = "Bush";
+		// Generate a random location in the world. This is multiplied by 100 so there is a grid system to these images. Images can then sit at (0, 0) or (0, 100) or (0, 200) and this prevents images from overlapping
 		var Xcoord = (Math.ceil(Math.random()*28))*100;
 		var Ycoord = (Math.ceil(Math.random()*28))*100;
 		
@@ -84,6 +86,7 @@ function GameGeneration() {
 			Collision = false;
 			for (let j = 0; j < SpawnedImgs.length; j++)
 			{
+				// Using the generated coordinates for the image, this is then checked against the currently existing images. If there is a collision, a new location is generated and the while loop repeats until there will be no overlap
 				if (Xcoord == SpawnedImgs[j].X & Ycoord == SpawnedImgs[j].Y)
 				{
 					Collision = true;
@@ -92,15 +95,21 @@ function GameGeneration() {
 				}
 			}
 		}
-		if (i < 55) SpawnedImgs.push({Type: Selection, X: Xcoord, Y: Ycoord, HW: 30});
-		if (i >= 55) SpawnedImgs.push({Type: Selection, X: Xcoord, Y: Ycoord, HW: 90});
+		// Add the information to SpawnedImgs array. HW contains the sizing of the image.
+		if (i < 50) SpawnedImgs.push({Type: Selection, X: Xcoord, Y: Ycoord, HW: 30});
+		if (i >= 50) SpawnedImgs.push({Type: Selection, X: Xcoord, Y: Ycoord, HW: 90});
 	}
-	Update("SpawnedImgs");
+	if (Practice == false) Update("SpawnedImgs");
+	// Update firebase so other players will see the world as well
 }
 
 function GameStart() {
 	if (Practice == true) PlayerPos = [{X: 50, Y: 50, In: "true", Name: ""}, {X: 2950, Y: 50, In: "true", Name: ""}, {X: 50, Y: 2950, In: "true", Name: ""}, {X: 2950, Y: 2950, In: "true", Name: ""}];
-	if (Practice == false) Read();
+	// Use the default information for positioning as the player is playing alone.
+	
+	if (Practice == false) Read(); // Read the number of players
+	
+	// If the game has already begun or there are no free places for the player to join
 	if (GameLoaded == true & EnteredGame == false | PlayerCount == 4 & EnteredGame == false)
 	{
 		clearInterval(checking);
@@ -109,39 +118,44 @@ function GameStart() {
 	}
 	Menu.classList.add("hide");
 	Load.classList.remove("hide");
+	
+	// If EnteredGame is false, the player is not waiting for more players before the game starts
 	if (EnteredGame == false & Practice == false)
 	{
+		// The player's name is then added to the list
 		PlayerPos[PlayerCount].Name = MyData.Name;
 		PlayerCount++;
-		PlayerID = `${MyData.Name}${PlayerCount}`;
 		PlayerNum = PlayerCount;
+		// Increase the player count and update so other players can see that a player has joined
 		Update("PlayerData");
-		EnteredGame = true;
+		EnteredGame = true; // The player is in the queue and will be prevented from increasing the playercount incorrectly
 	}
 	LoadPlayer.textContent = `Loading, ${PlayerCount}/4 Players`;
 	
-	if (PlayerCount == 4 | Practice == true)
+	if (PlayerCount == 4 | Practice == true) // Enough players have joined or are playing alone
 	{		
-		clearInterval(checking);
-		for (let i = 0; i < ImgNames.length; i++)
+		clearInterval(checking); // Checking playercount for matchmaking stopped
+		for (let i = 0; i < ImgNames.length; i++) 
 		{
 			let TempImg = new Image();
 			TempImg.src = `https://WtrWar.github.io/${ImgNames[i]}.png`;
 			GameImgs.push(TempImg);
+			// Create a parallel array to ImgNames so the images are contained parralel to the name so these can be accessed quickly if the element of ImgNames is known when placing an image
 		}
-		if (PlayerNum == 4 | Practice == true) 
+		if (PlayerNum == 4 | Practice == true) // The last player to join generates game
 	    {
 			SpawnedImgs = [];
-			GameGeneration();
-			Update("SpawnedImgs");
-			InGame = true;
-			Update("PlayerData");
+			GameGeneration(); 
+			if (Practice == false) Update("SpawnedImgs");
+			GameLoaded = true;
+			if (Practice == false) Update("PlayerData");
 		}
 		Load.classList.add("hide");
 		Game.classList.remove("hide");
 		Info.classList.remove("hide");
 		zonerun = setInterval(ZoneSystem, 1000);
 		drawing = setInterval(UpdateScreen, 25); // 40FPS (Saves on Firebase Reading, but still playable)
+		InGame = true;
 	}
 }
 
@@ -149,33 +163,36 @@ function GameStart() {
 // PERSONAL FUNCTIONS
 function EmptyInventory() {
 	let Slot = (event.target.id).at(-1);
-	Inventory[Slot-1] = ""; // not working. CurrentSlot undefined.
+	// When a player presses on an inventory square, this will grab the id of the image such as Slot1
+	Inventory[Slot-1] = "";
+	// Then clear the space in the inventory and show this was removed
 	HeldImg = document.getElementById(`${event.target.id}`);
 	HeldImg.src = "https://WtrWar.github.io/GearSquare.png";
 }
 
 function Fire() {
+	// Run through all gear in the game
 	for (let i = 0; i < GearList.length; i++)
 	{
+		// If the player is holding this gear and the delay between firing has been met
 		if (GearList[i].Type == Inventory[CurrentSlot-1] & FireTime >= GearList[i].FireDelay)
 		{
-			FireTime = 0;
+			FireTime = 0; // The player has just shot, and will have to wait the delay before firing again
 		    let Xdist = event.clientX - 8 - World.width/2;
 			let Ydist = event.clientY - 8 - World.height/2;
 			// 8 is taken away as (8, 8) is the (0, 0) position in World
 			
 			let Dist = Math.sqrt((Xdist*Xdist) + (Ydist*Ydist));// Dist formula
 			if (Dist < GearList[i].MinRange | Dist > GearList[i].Range) return;
-			// To standardize speed (by making water travel 10px per run), Dist/A = 10, Dist = 10A, Dist/10 = A
-			// Then divide the Xgradient and Ygradient by A, to standardize dist per frame
+			// To standardize speed (by making water travel 10px per run), Dist/Divisor = 10, Dist/10 = Divisor
 			let Divisor = Dist/8; // Changing 8 will change the standard speed (lowering reduces speed)
+			// Then divide the Xgradient and Ygradient by Divisor, to standardize dist per frame
 			let Xgradient = Xdist/Divisor;
 			let Ygradient = Ydist/Divisor;
 
 			var WaterInfo = 
 				{Dmg: GearList[i].Dmg, X: PlayerPos[PlayerNum-1].X, Y: PlayerPos[PlayerNum-1].Y, TargetX: PlayerPos[PlayerNum-1].X+Xdist, TargetY: PlayerPos[PlayerNum-1].Y+Ydist, Xgrad: Xgradient, Ygrad: Ygradient, Num: PlayerNum};
-			
-			// Num in WaterInfo is used to make sure player doesn't get damaged by their water, and allows spectating eliminator
+			// Add info into an object. Num in WaterInfo is used to make sure player doesn't get damaged by their water, and allows spectating eliminator
 			FiredWater.push(WaterInfo);
 			if (Practice == false) Update("FiredWater");
 		}
@@ -185,46 +202,54 @@ World.onmousedown = Fire;
 
 function Heal() {
 	HealTime = 0;
-	InHeal = false;
+	InHeal = false; // The player is no longer healing
 	HP += HealerList[ElementNum].Heal;
 	Shield += HealerList[ElementNum].ShieldHeal;
-	if (HP > 100) HP = 100;
+	if (HP > 100) HP = 100; // Prevents the player from having HP over max amount
 	if (Shield > 50) Shield = 50;
-	HPbar.value = HP;
-	Shieldbar.value = Shield;
+	HPbar.value = HP; // Display HP
+	Shieldbar.value = Shield; // Display Shield
 }
 
 function Moving() {	
 	if (InGame == false | InHeal == true) return;
-	let upkey = KeyBinds[0];
-	let leftkey = KeyBinds[1];
-	let rightkey = KeyBinds[2];
-	let downkey = KeyBinds[3];
+	let upkey = KeyBinds[0]; // Key to press to move up
+	let leftkey = KeyBinds[1]; // Key to press to move left
+	let rightkey = KeyBinds[2]; // Key to press to move right
+	let downkey = KeyBinds[3]; // Key to press to move down
 	
+	// Change the player's position based on their key pressed
 	if (Keys[upkey] == true) PlayerPos[PlayerNum-1].Y -= Speed;
 	if (Keys[downkey] == true) PlayerPos[PlayerNum-1].Y += Speed;
 	if (Keys[leftkey] == true) PlayerPos[PlayerNum-1].X -= Speed;
 	if (Keys[rightkey] == true) PlayerPos[PlayerNum-1].X += Speed;
 	
+	// Run through all rocks
 	for (let i = 0; i < SpawnedImgs.length; i++)
 	{
+		// Run if the Rock is being displayed on the player's screen
 		if (ScreenCheck(SpawnedImgs[i].X, SpawnedImgs[i].Y, "NoDraw", 0) == true & SpawnedImgs[i].Type == "Rock")
 		{
+			// Use the CollideCheck function to check if the player is touching the rock
 			let x = PlayerPos[PlayerNum-1].X, y = PlayerPos[PlayerNum-1].Y;
 			if (CollideCheck(x, SpawnedImgs[i].X, y, SpawnedImgs[i].Y, 40, SpawnedImgs[i].HW) == true)
 			{
+				// If the player moved down and is now inside the rock, undo the move
 				if (Keys[downkey] == true & y+40 >= SpawnedImgs[i].Y) 
 				{
 					PlayerPos[PlayerNum-1].Y -= Speed;
 				}
+				// If the player moved up and is now inside the rock, undo the move
 				if (Keys[upkey] == true & y <= SpawnedImgs[i].Y+SpawnedImgs[i].HW)
 				{
 					PlayerPos[PlayerNum-1].Y += Speed;
 				}
+				// If the player moved right and is now inside the rock, undo the move
 				if (Keys[rightkey] == true & x+40 >= SpawnedImgs[i].X)
 				{
 					PlayerPos[PlayerNum-1].X -= Speed;
 				}
+				// If the player moved left and is now inside the rock, undo the move
 				if (Keys[leftkey] == true & x <= SpawnedImgs[i].X+SpawnedImgs[i].HW)
 				{
 					PlayerPos[PlayerNum-1].X += Speed;
@@ -232,6 +257,7 @@ function Moving() {
 			}
 		}
 	}
+	// If the player moved outside the world, place them back inside
 	if (PlayerPos[PlayerNum-1].X > 3000) PlayerPos[PlayerNum-1].X = 3000;
 	if (PlayerPos[PlayerNum-1].X < 0) PlayerPos[PlayerNum-1].X = 0;
 	if (PlayerPos[PlayerNum-1].Y > 3000) PlayerPos[PlayerNum-1].Y = 3000;
@@ -239,24 +265,29 @@ function Moving() {
 }
 
 function PickUp() {
+	// Run through all spawned images
 	for (let i = 0; i < SpawnedImgs.length; i++)
 	{
+		// If the image can be picked up
 		if (SpawnedImgs[i].Type != "Bush" & SpawnedImgs[i].Type != "Rock")
 		{
+			// If the image is on screen (able to pick up)
 			if (ScreenCheck(SpawnedImgs[i].X, SpawnedImgs[i].Y, "NoDraw", 0))
 			{
+				// If the player is touching the image
 				if (CollideCheck(PlayerPos[PlayerNum-1].X, SpawnedImgs[i].X, PlayerPos[PlayerNum-1].Y, SpawnedImgs[i].Y, 40, 30) == true)
 				{
+					// Run through the inventory
 					for (let j = 0; j < Inventory.length; j++)
 					{
+						// To check which the soonest inventory slot that is empty for the player to be able to pick up the image and place into this slot
 						if (Inventory[j] == "")
 						{
-							Inventory[j] = SpawnedImgs[i].Type;
+							Inventory[j] = SpawnedImgs[i].Type; // Fill this slot
 							HeldImg = document.getElementById(`Held${j+1}`);
-							let type = SpawnedImgs[i].Type;
-							HeldImg.src = `https://WtrWar.github.io/${type}.png`;
-							SpawnedImgs.splice(i, 1);
-							if (Practice == false) Update("SpawnedImgs"); // remove img from game
+							HeldImg.src = `https://WtrWar.github.io/${SpawnedImgs[i].Type}.png`; // Display that this in in the inventory
+							SpawnedImgs.splice(i, 1); // This removes the image information from the world so when the world is redrawn, this will not appear
+							if (Practice == false) Update("SpawnedImgs"); // remove img from game for others
 							return;
 						}
 					}
@@ -267,33 +298,37 @@ function PickUp() {
 }
 
 function Usage() {
-	if (event.key == KeyBinds[4])
+	if (event.key == KeyBinds[4]) // If the player pressed the key to pick up an image
 	{
 		PickUp();
 		return;
 	}
 	if (InHeal == true | InGame == false) return;
-	if (event.key != KeyBinds[5] & event.key != KeyBinds[6] & event.key != KeyBinds[7] & event.key != KeyBinds[8]) return;
-	
+	if (event.key != KeyBinds[5] & event.key != KeyBinds[6] & event.key != KeyBinds[7] & event.key != KeyBinds[8]) return; // If the player did not press one of the keys necessary to change slot / use an items
 	let SelectionKeys = [KeyBinds[5], KeyBinds[6], KeyBinds[7], KeyBinds[8]];
-	for (let i = 0; i < SelectionKeys.length; i++)
+	// SelectionKeys = [Key to change to slot 1, Key to change to slot 2, ...]
+	for (let i = 0; i < SelectionKeys.length; i++) 
 	{
 		if (SelectionKeys[i] != event.key) continue;
+		// The key that the player pressed has been grabbed, and now knows what slot the player is accessing using the value of i
 		if (CurrentSlot == -1)
 		{
+			// If no inventory slot is being held
 			CurrentSlot = i+1;
-			HeldImg = document.getElementById(`Held${CurrentSlot}`);
+			HeldImg = document.getElementById(`Held${CurrentSlot}`); // Grab the image of the slot the player is currently in
 		}
 		try {
 			HeldImg = document.getElementById(`Held${CurrentSlot}`);
-			HeldImg.classList.remove("Highlighted");
+			HeldImg.classList.remove("Highlighted"); // Unhighlight slot previously held
 		}
 		catch {}
 		CurrentSlot = i+1;
 	}
 	HeldImg = document.getElementById("Held" + CurrentSlot);
+    // Run through the Gear in the game
 	for (let i = 0; i < GearList.length; i++)
 	{
+		// If one of these Gear are being held, highlight the slot
 		if (Inventory[CurrentSlot-1] == GearList[i].Type)
 		{
 			HeldImg.classList.add("Highlighted");
@@ -302,13 +337,13 @@ function Usage() {
 	for (let i = 0; i < HealerList.length; i++)
 	{
 		if (Inventory[CurrentSlot-1] != HealerList[i].Type) continue;
-		Inventory[CurrentSlot-1] = "";
+		Inventory[CurrentSlot-1] = ""; // Empty this slot in inventory
 		HeldImg.src = "https://WtrWar.github.io/GearSquare.png";
-		InHeal = true;
-		ElementNum = i;
+		InHeal = true; // Prevents the player from moving/firing/changing slot while healing
+		ElementNum = i; // To access the healing given in the Heal function
 		HealTime = HealerList[ElementNum].Duration/1000;
-		HealInfo.textContent = `${HealTime}s`;
-		setTimeout(Heal, HealerList[ElementNum].Duration);
+		HealInfo.textContent = `${HealTime}s`; // Show how long before the player has healed
+		setTimeout(Heal, HealerList[ElementNum].Duration); // Heal the player after the set time
 	}
 }
 document.onkeypress = Usage;
@@ -326,55 +361,62 @@ function MatchMake() {
 EnterGame.onclick = MatchMake;
 
 function UpdateScreen() {
+	if (PlayerCount == 1 & Practice == false) 
+	{
+		GameEnded();
+		clearInterval(drawing);
+	}
 	if (Practice == false) 
 	{
 		MultiplayerDelay++;
-		if (MultiplayerDelay%4 == 0) 
+		if (MultiplayerDelay%4 == 0) // The game is at 40FPS, and the Multiplayer information will update at 10FPS to save on data
 		{
-			Update("PlayerData"); // Reduce the running from Moving()
+			Update("PlayerData"); // Reduce the running from Moving() 
 			Read(); 
 		}
 	}
 	if (HealTime > 0)
 	{
 		HealInfo.textContent = `${Math.ceil(HealTime)}s`;
-		HealTime -= (1/35);
+		HealTime -= (1/40); // Because the game runs at 40FPS, the game will be reduced 40 times a second, so this needs to be reduced by 1/40 so this is accurate
 	}
 	if (HealTime <= 0) HealInfo.textContent = "";
 
 	myX = PlayerPos[PlayerNum-1].X;
 	myY = PlayerPos[PlayerNum-1].Y;
 
-	let topx = TheZone.TopX - myX + World.width/2;
-	let topy = TheZone.TopY - myY + World.height/2;
-	let bottomx = TheZone.BottomX - myX + World.width/2;
-	let dist = bottomx-topx; // changing when player moves
+	let topX = TheZone.TopX - myX + World.width/2; // Where to draw the left/top side of the zone compared to player
+	let topY = TheZone.TopY - myY + World.height/2; // Where to draw the left/top side of the zone compared to player
+	let bottomX = TheZone.BottomX - myX + World.height/2; // Where to draw the bottom/right side of the zone
+	let dist = bottomX-topX; // How long the zone is from the left to right. Since the zone is always a square, this is also the dist for Y
 
 	ctx.fillStyle = "blue";
 	ctx.fillRect(0, 0, World.width, World.height);
 	ctx.fillStyle = "lightgreen";
-	ctx.fillRect(topx, topy, dist, dist);
+	
+	ctx.fillRect(topX, topY, dist, dist); // Draw the zone in the world
 	
 	if (Practice == false)
 	{
 		for (let i = 1; i < PlayerPos.length+1; i++) // make Opponents appear (Be red)
 		{	
-			if (i == PlayerNum) continue;
-			if (PlayerPos[i-1].In == "false") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, GameImgs[3], 40);
-			if (PlayerPos[i-1].In == "true") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, GameImgs[1], 40)
+			if (i == PlayerNum) continue; // Don't display the player as red
+			if (PlayerPos[i-1].In == "false") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, GameImgs[3], 40); // If the Opponent was eliminated, display a skull
+			if (PlayerPos[i-1].In == "true") ScreenCheck(PlayerPos[i-1].X, PlayerPos[i-1].Y, GameImgs[1], 40); // If the Opponent is alive, display player as red
 		}
 	}
-	if (PlayerPos[PlayerNum-1].In == "false") ctx.drawImage(GameImgs[3], World.width/2, World.height/2, 40, 40);
-	if (PlayerPos[PlayerNum-1].In == "true") ctx.drawImage(GameImgs[0], World.width/2, World.height/2, 40, 40);
+	if (PlayerPos[PlayerNum-1].In == "false") ctx.drawImage(GameImgs[3], World.width/2, World.height/2, 40, 40); // If player eliminated, show skull
+	if (PlayerPos[PlayerNum-1].In == "true") ctx.drawImage(GameImgs[0], World.width/2, World.height/2, 40, 40); // If player alive, show orange
 
-	for (let i = 0; i < SpawnedImgs.length; i++) // Rocks, items etc
+	for (let i = 0; i < SpawnedImgs.length; i++) // Grab coordiantes of each image
 	{
 		let x = SpawnedImgs[i].X;
 		let y = SpawnedImgs[i].Y;
 		for (let j = 0; j < GameImgs.length; j++)
 		{
-			if (SpawnedImgs[i].Type == ImgNames[j]) // ImgNames and GameImgs Parallel
+			if (SpawnedImgs[i].Type == ImgNames[j]) // ImgNames and GameImgs Parallel, grab the image of what to display
 			{
+				// Display the image
 				ScreenCheck(SpawnedImgs[i].X, SpawnedImgs[i].Y, GameImgs[j], SpawnedImgs[i].HW);
 			}
 		}
@@ -382,13 +424,16 @@ function UpdateScreen() {
 
 	for (let i = 0; i < GearList.length; i++)
 	{
+		// If a Gear is being held
 		if (Inventory[CurrentSlot-1] == GearList[i].Type & HeldImg != null)
 		{
+			// Display max range with black
 			ctx.setLineDash([8, 15]);
 			ctx.beginPath();
 			ctx.arc(World.width/2, World.height/2, GearList[i].Range, 0, 2*Math.PI);
 			ctx.strokeStyle = "black";
 			ctx.stroke();
+			// Display min range with red
 			ctx.beginPath();
 			ctx.arc(World.width/2, World.height/2, GearList[i].MinRange, 0, 2*Math.PI);
 			ctx.strokeStyle = "red";
@@ -396,19 +441,20 @@ function UpdateScreen() {
 		}
 	}
 
-	FireTime += (1/60);	
-	for (let i = 0; i < FiredWater.length; i++) // Make fired waters appear. Not read by PlayerNum != PlayerCount
+	FireTime += (1/40);	// Increase the counter of how long since the player shot
+	for (let i = 0; i < FiredWater.length; i++) // Make fired waters appear.
 	{
-		if (PlayerNum == PlayerCount)
+		if (PlayerNum == PlayerCount) // If the player is the last to join, they will run this
 		{
 			FiredWater[i].X = FiredWater[i].X + FiredWater[i].Xgrad;
 			FiredWater[i].Y = FiredWater[i].Y + FiredWater[i].Ygrad;
+			// Move the fired water along its chosen direction
 		}
-		if (FiredWater[i].Num != PlayerNum)
+		if (FiredWater[i].Num != PlayerNum) // If the fired water was not shot by the player
 		{
-			if (CollideCheck(PlayerPos[PlayerNum-1].X, FiredWater[i].X, PlayerPos[PlayerNum-1].Y, FiredWater[i].Y, 40, 30) == true & InGame == true)
+			if (CollideCheck(PlayerPos[PlayerNum-1].X, FiredWater[i].X, PlayerPos[PlayerNum-1].Y, FiredWater[i].Y, 40, 30) == true & InGame == true) // If the player collided with another player's shot
 			{
-				Shield -= FiredWater[i].Dmg;
+				Shield -= FiredWater[i].Dmg; // Take damage
 				if (Shield < 0)
 				{
 					HP += Shield; // If Shield became -30, now HP loses 30, Shield is now 0
@@ -417,53 +463,54 @@ function UpdateScreen() {
 				if (HP <= 0) 
 				{ 
 					PlayerPos[PlayerNum-1].In = "false";
+					PlayerNum = FiredWater[i].Num; // Become the Opponent who eliminated the player
 					SpectateName.textContent = `Spectating: ${PlayerPos[num-1].Name}`;
 					PlayerNum = FiredWater[i].Num; // Spectate the eliminator
 					GameEnded();
 				}
-				FiredWater.splice(i, 1);
+				FiredWater.splice(i, 1); // Remove the fired water
 				if (Practice == false) Update("FiredWater");
 			}
 		}
 
-		if (PlayerNum == PlayerCount)
+		if (PlayerNum == PlayerCount) // Run only for last player to join
 		{
 			for (let j = 0; j < SpawnedImgs.length; j++)
 			{
 				if (SpawnedImgs[j].Type == "Rock")
 				{
-					if (CollideCheck(FiredWater[i].X, SpawnedImgs[j].X, FiredWater[i].Y, SpawnedImgs[j].Y, 30, 90) == true)
+					if (CollideCheck(FiredWater[i].X, SpawnedImgs[j].X, FiredWater[i].Y, SpawnedImgs[j].Y, 30, 90) == true) // If any fired water collided with any rocks in the game, remove the water
 					{
 						FiredWater.splice(i, 1);
 					}
 				}
 			}
-			if (CollideCheck(FiredWater[i].X, FiredWater[i].TargetX, FiredWater[i].Y, FiredWater[i].TargetY, 8, 8) == true)
+			if (CollideCheck(FiredWater[i].X, FiredWater[i].TargetX, FiredWater[i].Y, FiredWater[i].TargetY, 8, 8) == true) // If the fired water hit its destination
 			{
 				FiredWater.splice(i, 1);
 			}
 		}
-		ScreenCheck(FiredWater[i].X, FiredWater[i].Y, GameImgs[2], 30);
+		ScreenCheck(FiredWater[i].X, FiredWater[i].Y, GameImgs[2], 30); // Draw all fired water
 		if (PlayerNum == PlayerCount & Practice == false) Update("FiredWater");
 	}
 	Players.textContent = `${PlayerCount} players`;
 } 
 	
 function ZoneSystem() {	
-	TheZone.Time -= 1;
-	let CurrentZone = TheZone.CurrentZone;
-	let SizeChange;
-	try {SizeChange = Zones[CurrentZone-2].Sizing - Zones[CurrentZone-1].Sizing;}
+	TheZone.Time -= 1; // Time until the next zone closes reduced
+	let CurrentZone = TheZone.CurrentZone, SizeChange;
+	try {SizeChange = Zones[CurrentZone-2].Sizing - Zones[CurrentZone-1].Sizing;} // The amount that the zone still needs to shrink during the current zone
 	catch {SizeChange = 3000 - Zones[0].Sizing;}
 	TheZone.Shrink = Math.ceil(SizeChange/Zones[CurrentZone-1].Length);
 	
+	// Shrink the zone in the object
 	TheZone.TopX += TheZone.Shrink/2;
 	TheZone.TopY += TheZone.Shrink/2;
 	TheZone.BottomX -= TheZone.Shrink/2;
 	TheZone.BottomY -= TheZone.Shrink/2;
 	
 	TimeLeft.textContent = `Closing time left: ${TheZone.Time}s`;
-	// Changing the World from 3000 -> 200 (15 times smaller)
+	// Changing the World from 3000 -> 200 (15 times smaller) to make minimap
 	let left = (TheZone.TopX)/15;
 	let ZoneSize = (TheZone.BottomX-TheZone.TopX)/15;
 	Minimap.fillStyle = "blue";
@@ -473,23 +520,25 @@ function ZoneSystem() {
 	Minimap.fillStyle = "black";
 	Minimap.fillRect((PlayerPos[PlayerNum-1].X)/15, PlayerPos[PlayerNum-1].Y/15, 40/15, 40/15);
 	
+	// If the player doesn't collide with the zone, therefore not inside
 	if (CollideCheck(PlayerPos[PlayerNum-1].X, TheZone.TopX, PlayerPos[PlayerNum-1].Y, TheZone.TopY, 40, TheZone.BottomX-TheZone.TopX) == false)
 	{
+		// Take damage
 	    HP -= Zones[CurrentZone-1].Dmg;
 		HPbar.value = HP;
 		if (HP <= 0 & InGame == true) 
 		{
 			PlayerPos[PlayerNum-1].In = "false";
 			// Grab random number 1-4, and check if same as PlayerNum. If not, PlayerNum = RandomNumber, if so, repeat again. (spectating a random player)
+			GameEnded();
 			let num = Math.ceil(Math.random()*4);
 			while (num == PlayerNum) num = Math.ceil(Math.random()*4);
-			GameEnded();
 			PlayerNum = num;
 		}
 	}
 	if (TheZone.Time == 0)
 	{
-	    if (CurrentZone == Zones.length)
+	    if (CurrentZone == Zones.length) // When the final zone has fully closed, this will remove from view or be accessible by placing it far off screen
 		{
 			TheZone.TopX = 4000;
 		    TheZone.TopY = 4000;
@@ -499,29 +548,31 @@ function ZoneSystem() {
 		if (CurrentZone < Zones.length)
 		{
 			ZoneDisplay.textContent = `Closing zone: ${CurrentZone += 1}`;
-			TheZone.CurrentZone += 1;
+			TheZone.CurrentZone += 1; // Move to the next zone
 			TheZone.Time = Zones[CurrentZone-1].Length;
 		}
     }
+	console.log(TheZone);
+	
 } 
 
 function Read() {
 	db.collection('Game').get().then((snapshot) => {
-		snapshot.docs.forEach(doc => {
-			console.log(PlayerPos);
+		snapshot.docs.forEach(doc => {// Runs through each doc in Game collection in firebase
+			// For efficiency, particularly when using large amounts of information for SpawnedImgs, instead of using a field for x, y, and type: For each spawned image, taking 300* lines of code, all firebase information was changed to a csv format to make reading simpler
 			let str = "";
-			
 			GameLoaded = doc.data().Began;
+			
 			if (PlayerCount > doc.data().PlayerCount & GameLoaded == false & PlayerNum > PlayerCount) // Player left matchmaking, and: Eg Player1 left so Player3 now Player2. Player2 now Player1.
 			{
 				PlayerNum--;
-				PlayerID = `${MyData.Name}${PlayerNum}`;
 			}
 
-			let mine = {X: PlayerPos[PlayerNum-1].X, Y: PlayerPos[PlayerNum-1].Y, In: PlayerPos[PlayerNum-1].In, Name: PlayerPos[PlayerNum-1].Name};
+			let mine = {X: PlayerPos[PlayerNum-1].X, Y: PlayerPos[PlayerNum-1].Y, In: PlayerPos[PlayerNum-1].In, Name: PlayerPos[PlayerNum-1].Name}; // Hold your own data so you do not read your data in firebase. This is because other players could be updating your data and cause issues
+			
 			PlayerPos = [];
-			str = doc.data().PlayerData;
-			let Objects = str.split('/'); // Each obj is player data in csv form 
+			str = doc.data().PlayerData; // The CSV of players data
+			let Objects = str.split('/'); // Objects now splits each player's data, still in a CSV form
 			for (let i = 0; i < Objects.length; i++)
 			{
 				if (i == PlayerNum-1 & Practice == false) // Making player location update less frequent than other reading causes the position to be incorrect. By saving the position this issue does not occur and saves reading/update amount
@@ -529,7 +580,7 @@ function Read() {
 					PlayerPos.push({X: mine.X, Y: mine.Y, In: mine.In, Name: mine.Name});
 					continue;
 				}
-				let Obj = Objects[i].split(',');
+				let Obj = Objects[i].split(','); // For each object in Objects, this is split so the x, y, Name and In are contained in a new object and no more CSVs involved and added to PlayerPos. This process turns the csv into a list of objects, and is almost identical for SpawnedImgs and FiredWater
 				PlayerPos.push({X: parseInt(Obj[0]), Y: parseInt(Obj[1]), In: Obj[2], Name: Obj[3]});
 			}		
 			PlayerCount = doc.data().PlayerCount;
@@ -553,18 +604,18 @@ function Read() {
 				let Obj = Objects[i].split(',');
 				FiredWater.push({Dmg: parseInt(Obj[0]), X: parseInt(Obj[1]), Y: parseInt(Obj[2]), TargetX: parseInt(Obj[3]), TargetY: parseInt(Obj[4]), Xgrad: parseInt(Obj[5]), Ygrad: parseInt(Obj[6]), Num: parseInt(Obj[7])});
 			}
-			console.log(PlayerPos);
 		})
 	})
 }
 
 function Update(DataType) {
-	let CsvString = "";
+	let CsvString = ""; // This string will be used to update firebase data in a CSV format
     if (DataType == 'PlayerData')
 	{
-		for (let i = 0; i < PlayerPos.length; i++) // Return to csv layout
+		for (let i = 0; i < PlayerPos.length; i++)
 		{
 			CsvString = CsvString+`${PlayerPos[i].X},${PlayerPos[i].Y},${PlayerPos[i].In},${PlayerPos[i].Name}/`;
+			// Add the player's data to CsvString to return to the format that it was read so other player's can also read this data
 		}
 		CsvString = CsvString.slice(0, -1);
 		db.collection('Game').doc('GameData').update({
@@ -572,6 +623,7 @@ function Update(DataType) {
 			"PlayerCount": PlayerCount,
 			"Began": GameLoaded,
 		})
+		// This process is the same for SpawnedImgs and FiredWater, however instead involves the data from those object lists instead
 	}
 	if (DataType == 'SpawnedImgs')
     {
@@ -590,7 +642,6 @@ function Update(DataType) {
 		{
 			CsvString = CsvString+`${FiredWater[i].Dmg},${FiredWater[i].X},${FiredWater[i].Y},${FiredWater[i].TargetX},${FiredWater[i].TargetY},${FiredWater[i].Xgrad},${FiredWater[i].Ygrad},${FiredWater[i].Num}/`;
 		}
-		
 		CsvString = CsvString.slice(0, -1);
 		db.collection('Game').doc('GameData').update({
 			"FiredWater": CsvString,
@@ -598,8 +649,9 @@ function Update(DataType) {
 	}
 	if (DataType == "MyAcc")
 	{
+		// When the player has finished their game, update their account data
 		db.collection('Accounts').doc(MyData.Name).update({
-			"TotGame": MyData.TotGames,
+			"TotGames": MyData.TotGames,
 			"TotWins": MyData.TotWins,
 			"AvgPlace": MyData.AvgPlace,
 		})
@@ -624,8 +676,7 @@ function StartPractice() {
 	Practice = true;
 	PlayerCount = 1;
 	Menu.classList.add("hide");
-	PlayerID = 'Player1';
-	GameStart();
+	GameStart(); // This will start the game as regularly, however Practice = true will prevent multiplayer processes
 }
 EnterPractice.onclick = StartPractice;
 	
@@ -633,16 +684,9 @@ function ChangeScreen() {
 	if (window.event.target.id == "Back") // Exiting to Menu
 	{
 		Menu.classList.remove("hide");
-		if (SettingScreen.classList.contains("hide") == false) // Currently in Settings
-		{
-            SettingScreen.classList.add("hide");
-		}
-		if (AccountScreen.classList.contains("hide") == false) // Currently in Accounts
-		{
-			AccountScreen.classList.add("hide");
-		}
-		Back.classList.add("hide"); // Remove Back button
-		return;
+		SettingScreen.classList.add("hide");
+		AccountScreen.classList.add("hide");
+	    return;
 	}	
 	Back.classList.remove("hide"); 
 	Menu.classList.add("hide");
@@ -660,43 +704,40 @@ Back.onclick = ChangeScreen;
 Accounts.onclick = ChangeScreen;
 	
 function SignUpOrIn() {	
-	var Data;
-	if (window.event.target.id == "SignIn") var SignIn = "true"; 
+	var Data; // This is TRY to grab the data of the account the player is signing into or creating
+	if (window.event.target.id == "SignIn") var SignIn = true; 
 	if (window.event.target.id == "SignUp")
 	{
 		let Name = NameMake.value, Pass = PassMake.value;
-		if (Name.length >= 4 & Name.length <= 12 & Pass.length >= 4 & Pass.length <= 12)
+		if (Name.length >= 4 & Name.length <= 12 & Pass.length >= 4 & Pass.length <= 12) // The username and password have acceptable length
 		{
-			var SignIn = "false";
-			if (Name == "Username" | Pass == "Password") var SignIn = "fail";
+			var SignIn = false;
+			if (Name == "Username" | Pass == "Password") return; // Unacceptable
 		}
-		else var SignIn = "fail";
+		else return; // Unacceptable
 	}
 	db.collection('Accounts').get().then((snapshot) => {
 		snapshot.docs.forEach(doc => {
-			if (SignIn == "true" & doc.id == Name.value | SignIn == "false" & doc.id == NameMake.value) // If trying to sign in, grab information of desired account. If trying to make account, check try to grab data of it to see if it does exist
+			if (SignIn == true & doc.id == Name.value | SignIn == false & doc.id == NameMake.value) // If trying to sign in, grab information of desired account. If trying to make account, check try to grab data of it to see if it does exist
 			{
 				Data = doc.data(); // Grabs password and other info as object. Makes sign in or up simpler
 			}
 		})
 	})
-	if (SignIn == "fail") return;
-	if (SignIn == "true") 
+	if (SignIn == true) 
 	{
 		setTimeout(function() {
-			
-			if (Data == null | Data.Password != Pass.value) // No matching username
+			// Data was used to check if the account exists. If Data is null, then this account does not exist and so the username does not have a match. If/Or the password is incorrect then it will fail
+			if (Data == null | Data.Password != Pass.value)
 			{
 				alert("Wrong username/password");
 				return;
 			}
 			alert("Successful sign in");
-			MyData = {Name: Name.value, TotGames: Data.TotGame, TotWins: Data.TotWin, AvgPlace: Data.AvgPlace}; // Grabs the data from firebase to update when game ends
-			ShowName.textContent = `Signed into: ${MyData.Name}`;
-			EnterGame.textContent = "Multiplayer";
+			MyData = {Name: Name.value, TotGames: Data.TotGames, TotWins: Data.TotWins, AvgPlace: Data.AvgPlace}; // Grabs the data from firebase to update when game ends
 		}, 500)
 	}
-	if (SignIn == "false")
+	if (SignIn == false)
 	{
 		setTimeout(function() {
 			if (Data != null) // Exists
@@ -704,35 +745,41 @@ function SignUpOrIn() {
 				alert("An account already has same name");
 				return;
 			}
+			// Add a new account into firebase for sign ins
 			db.collection('Accounts').doc(NameMake.value).set({
 			    Password: PassMake.value,
-			    TotGame: 0,
-			    TotWin: 0,
+			    TotGames: 0,
+			    TotWins: 0,
 				AvgPlace: 0,
 		    })
 			alert("Account made");
 			MyData = {Name: Name.value, TotGames: 0, TotWins: 0, AvgPlace: 0}; // Grabs the data from firebase to update when game ends
-			ShowName.textContent = `Signed into: ${MyData.Name}`;
-			EnterGame.textContent = "Multiplayer";
 	    }, 500)
 	}
+	setTimeout(function() {
+		ShowName.textContent = `Signed into: ${MyData.Name}`;
+		EnterGame.textContent = "Multiplayer";
+	    ShowGames.textContent = `Total games: ${MyData.TotGames}`;
+		ShowWins.textContent = `Total wins: ${MyData.TotWins}`;
+		ShowPlace.textContent = `Average placement: ${MyData.AvgPlace}`;
+	}, 1000)
 }
 SignIn.onclick = SignUpOrIn;
 SignUp.onclick = SignUpOrIn;
 
 function ChangeBinds() {
-	let char = NewKey.value;
+	let char = NewKey.value; // This is the key the player input to change a bind
 	char = char.toLowerCase();
-	char = char.trim();
-	if (char == "" & char.length != 1) return;
-	if (ChangingKeys[9] == 0) 
+	char = char.trim(); // This is to remove all spaces and keep the keys lowercase to prevent holding shift being necessary for actions
+	if (char.length != 1) return; // Prevents a bind being empty or more than one key (which will prevent the action similar to being empty)
+	if (ChangingKeys[9] == 0) // Starting to change all binds
 	{
 		Back.classList.add("hide");
-		KeyBinds = ['', '', '', '', '', '', '', '', '']; // To reset the current binds so these can be reset by 
+		KeyBinds = ['', '', '', '', '', '', '', '', '']; // To reset the current binds so these can be all adjusted. If not, then issues will occur from the code that rejects a key being used for 2 controls
 		ChangingKeys[9] = 0;
 	}
-	let num = ChangingKeys[9];
-	for (let i = 0; i < KeyBinds.length-1; i++)
+	let num = ChangingKeys[9]; // ChangingKeys[9] will contain the information of which element in ChangingKeys to display on screen (State what key to change and change this in KeyBinds as they are parallel)
+	for (let i = 0; i < KeyBinds.length-1; i++) // Runs through all currently set binds to prevent a key being used twice
 	{
 		if (char == KeyBinds[i] | char.charCodeAt(0) == KeyBinds[i]) // Already binded
 	    {
@@ -740,17 +787,17 @@ function ChangeBinds() {
 			return;
 		}
 	}
-	KeyBinds[num] = char;
-	if (num < 4) // Binds for moving. Need to be in KeyCode for diagonal movement
+	KeyBinds[num] = char; // Makes the bind change
+	if (num < 4) // Binds for moving. Need to be in Unicode for diagonal movement to be possible
 	{
-		KeyBinds[num] = char.charCodeAt(0); // converts to UniCode/Ascii or something like that. not the keycode though.
+		KeyBinds[num] = char.charCodeAt(0); // converts to UniCode
 	}
-	ChangingKeys[9] = num += 1;
+	ChangingKeys[9] = num += 1; // Now will increase the counter so the next bind to change will be displayed and will be changed correctly because of the parallel arrays
 	KeyToChange.textContent = "Press " + ChangingKeys[num]; // First will access element 1, then element 2...
 	NewKey.value = "";
 	if (num == 9) // Accessing the number and not a bind
 	{
-		ChangingKeys[9] = 0;
+		ChangingKeys[9] = 0; // Ends changing bind process
 		KeyToChange.textContent = "Press " + ChangingKeys[0];
 		Back.classList.remove("hide");
 	}
@@ -766,18 +813,18 @@ function GameEnded() {
 		if (PlayerCount == 2) Placement.textContent = "You placed: 2nd";
 		if (PlayerCount == 3) Placement.textContent = "You placed: 3rd";
 		if (PlayerCount >= 4) Placement.textContent = `You placed: ${PlayerCount}th`;
+		
 		let points = MyData.AvgPlace*MyData.TotGames;
 		points += PlayerCount;
 		MyData.TotGames++;
-		MyData.AvgPlace = points/MyData.TotGames;
-		if (PlayerCount == 1) MyData.TotWins++;
+		MyData.AvgPlace = points/MyData.TotGames; // Calculates new average placement by grabbing the "points" and then adding how the player placed with PlayerCount, and dividing this when the player has had another game
+		if (PlayerCount == 1) MyData.TotWins++; 
 			
 	    Info.classList.add("hide");
-		PlayerPos[PlayerNum-1].In = "false";
 		InGame = false;
 		PlayerCount--;
-		if (PlayerCount > 0) Update("PlayerData");
-		if (PlayerCount == 0) 
+		if (Practice == false) Update("PlayerData"); // Reduce the playercount for others
+		if (PlayerCount == 0) // The last player in the game needs the reset the values for the next game
 		{
 			Practice = true; // This prevents the game from reading/writing anymore like a practice game
 			db.collection('Game').doc('GameData').update({
@@ -788,20 +835,20 @@ function GameEnded() {
 				"PlayerCount": 0,
 			})
 		}
-		Update("MyAcc");
+		Update("MyAcc"); // Update stat data
 	}
 	else if (Practice == true) 
 	{
 		clearInterval(zonerun);
 		alert("You were eliminated");
-		location.reload();
+		location.reload(); // Reload page
 	}
 }
 
 function RemovePlayer() {
 	if (Practice == false)
 	{
-		PlayerCount--; // Using with >1 dreamweaver test in google causes matchmake issue
+		PlayerCount--;
 		// Add 1 to games played and adjust the average placement
 		let points = MyData.AvgPlace*MyData.TotGames;
 		points += PlayerCount;
@@ -814,10 +861,10 @@ function RemovePlayer() {
 window.onbeforeunload = RemovePlayer;
 	
 function KeyDown() {
-    Keys = (Keys || []);             // Copied.       https://www.w3schools.com/graphics/game_controllers.asp
+    Keys = (Keys || []); // https://www.w3schools.com/graphics/game_controllers.asp
 	
 	let key = event.key;
-    Keys[key.charCodeAt(0)] = true;       
+    Keys[key.charCodeAt(0)] = true; // Save that the player is pressing the key    
 	Moving();              
 	Usage();
 }
@@ -825,32 +872,37 @@ document.onkeydown = KeyDown;
 
 function KeyUp() {
 	let key = event.key;
-	Keys[key.charCodeAt(0)] = false;  
+	Keys[key.charCodeAt(0)] = false; // Save that the key is no longer held down
 }
 document.onkeyup = KeyUp;
 
 function ScreenCheck(x, y, Name, size) {
 	let xCoord = x - myX + World.width/2;
 	let yCoord = y - myY + World.height/2;
+	
+	// Checks if the image information will be displayed on screen using its coordinates compared to the sizing of the world
 	if (xCoord >= -(World.width) & xCoord <= World.width & yCoord >= -(World.height) & yCoord <= World.height)
 	{
 		if (Name != "NoDraw") ctx.drawImage(Name, xCoord, yCoord, size, size);
-		return true;
+		return true; // It is on screen
 	}
-	return false;
+	return false; // It is not on screen
 }
 	
 function CollideCheck(X1, X2, Y1, Y2, Length1, Length2) {
+	// Two images locations and sizes are tranferred into the function to check if they have collide
+	
 	if (X1+Length1 > X2 & X1 < X2+Length2) // Any point on the two images have same x
 	{
 		if (Y1+Length1 > Y2 & Y1 < Y2+Length2) // Point also had the same y (Collides)
 		{
-			return true;
+			return true; // There was a collision
 		}
 	}
-	return false;
+	return false; // No collision
 }
 	
+// Tells the player if they are not online
 if (navigator.onLine == true) Read();
 if (navigator.onLine == false) {
 	alert("Not connected to the internet. Reconnect first and reload page.");

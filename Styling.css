@@ -30,7 +30,7 @@
 	position: fixed;
 	text-align: center;
 	left: 540px;
-	height: 450px;
+	height: 420px;
 	width: 200px;
 	background-color: aqua;
 }
@@ -111,14 +111,6 @@
 }
 .Highlighted {
 	border: 2px solid red;
-}
-.fired {
-	z-index: 5;
-	position: fixed;
-}
-.pulsate {
-	height: 45px;
-	width: 90px;
 }
 .hide {
 	visibility: hidden;
