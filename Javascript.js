@@ -58,7 +58,7 @@ var ctx = World.getContext("2d");
 
 // MULTIPLAYER/WORLD VARIABLES
 var SpawnedImgs = [], FiredWater = [], PlayerPos = [{X: 50, Y: 50, In: "true", Name: ""}, {X: 2950, Y: 50, In: "true", Name: ""}, {X: 50, Y: 2950, In: "true", Name: ""}, {X: 2950, Y: 2950, In: "true", Name: ""}];
-var EnteredGame = false, PlayerCount = 1, Practice = false, GameLoaded = false, MyData;
+var EnteredGame = false, PlayerCount = 1, Practice = false, GameLoaded = false, MyData = {Name: ""};
 
 
 // GAME LOAD FUNCTIONS
@@ -112,9 +112,12 @@ function GameStart() {
 	// If the game has already begun or there are no free places for the player to join
 	if (GameLoaded == true & EnteredGame == false | PlayerCount == 4 & EnteredGame == false)
 	{
-		clearInterval(checking);
-		alert("Game already started. Try again later.");
-		return;
+		if (Practice == false)
+		{
+			clearInterval(checking);
+			alert("Game already started. Try again later.");
+			return;
+		}
 	}
 	Menu.classList.add("hide");
 	Load.classList.remove("hide");
@@ -269,29 +272,22 @@ function PickUp() {
 	for (let i = 0; i < SpawnedImgs.length; i++)
 	{
 		// If the image can be picked up
-		if (SpawnedImgs[i].Type != "Bush" & SpawnedImgs[i].Type != "Rock")
+		if (SpawnedImgs[i].Type == "Bush" | SpawnedImgs[i].Type == "Rock") continue;
+		// If player is touching image (able to pick up)
+		if (CollideCheck(PlayerPos[PlayerNum-1].X, SpawnedImgs[i].X, PlayerPos[PlayerNum-1].Y, SpawnedImgs[i].Y, 40, 30) == false) continue;
+
+		// Run through the inventory
+		for (let j = 0; j < Inventory.length; j++)
 		{
-			// If the image is on screen (able to pick up)
-			if (ScreenCheck(SpawnedImgs[i].X, SpawnedImgs[i].Y, "NoDraw", 0))
+			// To check which the soonest inventory slot that is empty for the player to be able to pick up the image and place into this slot
+			if (Inventory[j] == "")
 			{
-				// If the player is touching the image
-				if (CollideCheck(PlayerPos[PlayerNum-1].X, SpawnedImgs[i].X, PlayerPos[PlayerNum-1].Y, SpawnedImgs[i].Y, 40, 30) == true)
-				{
-					// Run through the inventory
-					for (let j = 0; j < Inventory.length; j++)
-					{
-						// To check which the soonest inventory slot that is empty for the player to be able to pick up the image and place into this slot
-						if (Inventory[j] == "")
-						{
-							Inventory[j] = SpawnedImgs[i].Type; // Fill this slot
-							HeldImg = document.getElementById(`Held${j+1}`);
-							HeldImg.src = `https://WtrWar.github.io/${SpawnedImgs[i].Type}.png`; // Display that this in in the inventory
-							SpawnedImgs.splice(i, 1); // This removes the image information from the world so when the world is redrawn, this will not appear
-							if (Practice == false) Update("SpawnedImgs"); // remove img from game for others
-							return;
-						}
-					}
-				}
+				Inventory[j] = SpawnedImgs[i].Type; // Fill this slot
+				HeldImg = document.getElementById(`Held${j+1}`);
+				HeldImg.src = `https://WtrWar.github.io/${SpawnedImgs[i].Type}.png`; // Display that this in in the inventory
+				SpawnedImgs.splice(i, 1); // This removes the image information from the world so when the world is redrawn, this will not appear
+				if (Practice == false) Update("SpawnedImgs"); // remove img from game for others
+				return;
 			}
 		}
 	}
@@ -494,7 +490,7 @@ function UpdateScreen() {
 		if (PlayerNum == PlayerCount & Practice == false) Update("FiredWater");
 	}
 	Players.textContent = `${PlayerCount} players`;
-} 
+ } 
 	
 function ZoneSystem() {	
 	TheZone.Time -= 1; // Time until the next zone closes reduced
@@ -551,9 +547,7 @@ function ZoneSystem() {
 			TheZone.CurrentZone += 1; // Move to the next zone
 			TheZone.Time = Zones[CurrentZone-1].Length;
 		}
-    }
-	console.log(TheZone);
-	
+    }	
 } 
 
 function Read() {
@@ -686,6 +680,7 @@ function ChangeScreen() {
 		Menu.classList.remove("hide");
 		SettingScreen.classList.add("hide");
 		AccountScreen.classList.add("hide");
+		Back.classList.add("hide");
 	    return;
 	}	
 	Back.classList.remove("hide"); 
@@ -861,8 +856,7 @@ function RemovePlayer() {
 window.onbeforeunload = RemovePlayer;
 	
 function KeyDown() {
-    Keys = (Keys || []); // https://www.w3schools.com/graphics/game_controllers.asp
-	
+    Keys = (Keys || []);	
 	let key = event.key;
     Keys[key.charCodeAt(0)] = true; // Save that the player is pressing the key    
 	Moving();              
