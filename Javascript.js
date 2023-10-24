@@ -459,10 +459,9 @@ function UpdateScreen() {
 				if (HP <= 0) 
 				{ 
 					PlayerPos[PlayerNum-1].In = "false";
-					PlayerNum = FiredWater[i].Num; // Become the Opponent who eliminated the player
+					GameEnded();
 					SpectateName.textContent = `Spectating: ${PlayerPos[num-1].Name}`;
 					PlayerNum = FiredWater[i].Num; // Spectate the eliminator
-					GameEnded();
 				}
 				FiredWater.splice(i, 1); // Remove the fired water
 				if (Practice == false) Update("FiredWater");
