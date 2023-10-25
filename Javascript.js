@@ -438,13 +438,9 @@ function UpdateScreen() {
 		{
 			for (let j = 0; j < SpawnedImgs.length; j++)
 			{
-				if (SpawnedImgs[j].Type == "Rock")
-				{
-					if (CollideCheck(FiredWater[i].X, SpawnedImgs[j].X, FiredWater[i].Y, SpawnedImgs[j].Y, 30, 90) == true) // If any fired water collided with any rocks in the game, remove the water
-					{
+			if (SpawnedImgs[j].Type != "Rock") continue;
+				if (CollideCheck(FiredWater[i].X, SpawnedImgs[j].X, FiredWater[i].Y, SpawnedImgs[j].Y, 30, 90) == false) // If any fired water collided with any rocks in the game, remove the water
 						FiredWater.splice(i, 1);
-					}
-				}
 			}
 			if (CollideCheck(FiredWater[i].X, FiredWater[i].TargetX, FiredWater[i].Y, FiredWater[i].TargetY, 8, 8) == true) // If the fired water hit its destination
 			{
