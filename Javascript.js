@@ -220,51 +220,17 @@ function Moving() {
 	let leftkey = KeyBinds[1]; // Key to press to move left
 	let rightkey = KeyBinds[2]; // Key to press to move right
 	let downkey = KeyBinds[3]; // Key to press to move down
-	
-	// Change the player's position based on their key pressed
-	if (Keys[upkey] == true) PlayerPos[PlayerNum-1].Y -= Speed;
-	if (Keys[downkey] == true) PlayerPos[PlayerNum-1].Y += Speed;
-	if (Keys[leftkey] == true) PlayerPos[PlayerNum-1].X -= Speed;
-	if (Keys[rightkey] == true) PlayerPos[PlayerNum-1].X += Speed;
-	
-	// Run through all rocks
-	for (let i = 0; i < SpawnedImgs.length; i++)
+
+	for (let i = 0; i < SpawnedImgs.length++)
 	{
-		// Run if the Rock is being displayed on the player's screen
 		if (ScreenCheck(SpawnedImgs[i].X, SpawnedImgs[i].Y, "NoDraw", 0) == true & SpawnedImgs[i].Type == "Rock")
 		{
-			// Use the CollideCheck function to check if the player is touching the rock
-			let x = PlayerPos[PlayerNum-1].X, y = PlayerPos[PlayerNum-1].Y;
-			if (CollideCheck(x, SpawnedImgs[i].X, y, SpawnedImgs[i].Y, 40, SpawnedImgs[i].HW) == true)
-			{
-				// If the player moved down and is now inside the rock, undo the move
-				if (Keys[downkey] == true & y+40 >= SpawnedImgs[i].Y) 
-				{
-					PlayerPos[PlayerNum-1].Y -= Speed;
-				}
-				// If the player moved up and is now inside the rock, undo the move
-				if (Keys[upkey] == true & y <= SpawnedImgs[i].Y+SpawnedImgs[i].HW)
-				{
-					PlayerPos[PlayerNum-1].Y += Speed;
-				}
-				// If the player moved right and is now inside the rock, undo the move
-				if (Keys[rightkey] == true & x+40 >= SpawnedImgs[i].X)
-				{
-					PlayerPos[PlayerNum-1].X -= Speed;
-				}
-				// If the player moved left and is now inside the rock, undo the move
-				if (Keys[leftkey] == true & x <= SpawnedImgs[i].X+SpawnedImgs[i].HW)
-				{
-					PlayerPos[PlayerNum-1].X += Speed;
-				}
-			}
+			if (Keys[downkey] == true & y+45 <= SpawnedImgs[i].Y) PlayerPos[PlayerNum-1].Y += Speed;
+		        if (Keys[upkey] == true & y-5 >= SpawnedImgs[i].Y) PlayerPos[PlayerNum-1].Y -= Speed;
+			if (Keys[leftkey] == true & x-5 >= SpawnedImgs[i].X) PlayerPos[PlayerNum-1].X -= Speed;
+			if (Keys[rightkey] == true & x+45 <= SpawnedImgs[i].X) PlayerPos[PlayerNum-1].X += Speed;
 		}
 	}
-	// If the player moved outside the world, place them back inside
-	if (PlayerPos[PlayerNum-1].X > 3000) PlayerPos[PlayerNum-1].X = 3000;
-	if (PlayerPos[PlayerNum-1].X < 0) PlayerPos[PlayerNum-1].X = 0;
-	if (PlayerPos[PlayerNum-1].Y > 3000) PlayerPos[PlayerNum-1].Y = 3000;
-	if (PlayerPos[PlayerNum-1].Y < 0) PlayerPos[PlayerNum-1].Y = 0;
 }
 
 function PickUp() {
