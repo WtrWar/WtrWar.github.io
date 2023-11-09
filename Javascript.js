@@ -221,7 +221,7 @@ function Moving() {
 	let rightkey = KeyBinds[2]; // Key to press to move right
 	let downkey = KeyBinds[3]; // Key to press to move down
 
-	for (let i = 0; i < SpawnedImgs.length++)
+	for (let i = 0; i < SpawnedImgs.length; i++)
 	{
 		if (ScreenCheck(SpawnedImgs[i].X, SpawnedImgs[i].Y, "NoDraw", 0) == true & SpawnedImgs[i].Type == "Rock")
 		{
@@ -564,44 +564,42 @@ function Read() {
 }
 
 function Update(DataType) {
-	let CsvString = ""; // This string will be used to update firebase data in a CSV format
-    if (DataType == 'PlayerData')
+	let CsvString = "", TempList; // This string will be used to update firebase data in a CSV format
+
+	// TEST         
+	if (DataType == 'PlayerData') TempList = PlayerPos;
+	if (DataType == 'SpawnedImgs') TempList = SpawnedImgs;
+	if (DataType == 'FiredWater') TempList = FiredWater;
+	if (TempList != null)
 	{
-		for (let i = 0; i < PlayerPos.length; i++)
+		for (let i = 0; i < TempList.length; i++)
 		{
-			CsvString = CsvString+`${PlayerPos[i].X},${PlayerPos[i].Y},${PlayerPos[i].In},${PlayerPos[i].Name}/`;
-			// Add the player's data to CsvString to return to the format that it was read so other player's can also read this data
+			for (var Property in TempList)
+			{
+	                      let piece = TempString.Property;
+				CsvString = CsvString+`${piece}`;
+			}
+	                if (i != TempList.length-1) CsvString = CsvString+'\'
+                 }
+                 if (DataType == 'PlayerPos')
+		 {
+			 db.collection('Game').doc('GameData').update({
+				"PlayerData": CsvString,
+				"PlayerCount": PlayerCount,
+				"Began": GameLoaded,
+			 })
+		 }
+		if (DataType == 'SpawnedImgs')
+		{
+			db.collection('Game').doc('GameData').update({"SpawnedImgs": CsvString})
 		}
-		CsvString = CsvString.slice(0, -1);
-		db.collection('Game').doc('GameData').update({
-			"PlayerData": CsvString,
-			"PlayerCount": PlayerCount,
-			"Began": GameLoaded,
-		})
-		// This process is the same for SpawnedImgs and FiredWater, however instead involves the data from those object lists instead
+		if (DataType == 'FiredWater')
+		{
+			db.collection('Game').doc('GameData').update({"FiredWater": CsvString})
+		}
 	}
-	if (DataType == 'SpawnedImgs')
-    {
-		for (let i = 0; i < SpawnedImgs.length; i++)
-		{
-			CsvString = CsvString +`${SpawnedImgs[i].Type},${SpawnedImgs[i].X},${SpawnedImgs[i].Y},${SpawnedImgs[i].HW}/`;
-		}
-		CsvString = CsvString.slice(0, -1);
-		db.collection('Game').doc('GameData').update({
-	    	"SpawnedImgs": CsvString,
-	    })
-	}		
-	if (DataType == "FiredWater")
-	{
-		for (let i = 0; i < FiredWater.length; i++)
-		{
-			CsvString = CsvString+`${FiredWater[i].Dmg},${FiredWater[i].X},${FiredWater[i].Y},${FiredWater[i].TargetX},${FiredWater[i].TargetY},${FiredWater[i].Xgrad},${FiredWater[i].Ygrad},${FiredWater[i].Num}/`;
-		}
-		CsvString = CsvString.slice(0, -1);
-		db.collection('Game').doc('GameData').update({
-			"FiredWater": CsvString,
-		})
-	}
+        //
+	
 	if (DataType == "MyAcc")
 	{
 		// When the player has finished their game, update their account data
@@ -642,18 +640,12 @@ function ChangeScreen() {
 		SettingScreen.classList.add("hide");
 		AccountScreen.classList.add("hide");
 		Back.classList.add("hide");
-	    return;
+	        return;
 	}	
 	Back.classList.remove("hide"); 
 	Menu.classList.add("hide");
-	if (window.event.target.id == "Settings") // Enter settings
-	{
-		SettingScreen.classList.remove("hide");
-	}
-	if (window.event.target.id == "Accounts") // Enter accounts
-	{
-		AccountScreen.classList.remove("hide");
-	}
+	if (window.event.target.id == "Settings") SettingScreen.classList.remove("hide");
+	if (window.event.target.id == "Accounts") AccountScreen.classList.remove("hide");
 }
 Settings.onclick = ChangeScreen;
 Back.onclick = ChangeScreen;
@@ -846,15 +838,9 @@ function ScreenCheck(x, y, Name, size) {
 	
 function CollideCheck(X1, X2, Y1, Y2, Length1, Length2) {
 	// Two images locations and sizes are tranferred into the function to check if they have collide
-	
-	if (X1+Length1 > X2 & X1 < X2+Length2) // Any point on the two images have same x
-	{
-		if (Y1+Length1 > Y2 & Y1 < Y2+Length2) // Point also had the same y (Collides)
-		{
-			return true; // There was a collision
-		}
-	}
-	return false; // No collision
+	if (X1+Length1 < X2 | X1 > X2+Length2) return false;
+	if (Y1+Length1 < Y2 | Y1 > Y2+Length2) return false;
+	return true;
 }
 	
 // Tells the player if they are not online
